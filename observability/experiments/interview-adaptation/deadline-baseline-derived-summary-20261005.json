@@ -1,0 +1,14 @@
+{
+  "suites": 1,
+  "tests": 3,
+  "failures": 3,
+  "errors": 0,
+  "skipped": 0,
+  "actualExternalModelCalls": 0,
+  "wireTerminationObservations": [],
+  "failedCases": [
+    "调用前线程已取消时不开始模型请求",
+    "报告超时返回失败同时向实际批次线程发送中断",
+    "一次调用中断后不再发起第二次结构重试"
+  ]
+}

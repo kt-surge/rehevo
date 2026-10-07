@@ -1,0 +1,22 @@
+{
+  "verifiedAt": "2026-10-05T12:20:35.989072+00:00",
+  "method": "independent SHA-256 recomputation",
+  "runs": [
+    {
+      "run": "training-history-baseline-20261005-r1",
+      "files": 5,
+      "mismatches": []
+    },
+    {
+      "run": "training-history-candidate-20261005-r1",
+      "files": 97,
+      "mismatches": []
+    },
+    {
+      "run": "training-history-product-20261005-r1",
+      "files": 95,
+      "mismatches": []
+    }
+  ],
+  "totalFiles": 197
+}

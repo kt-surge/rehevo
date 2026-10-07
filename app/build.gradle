@@ -43,6 +43,8 @@ dependencies {
     implementation "org.springframework.ai:spring-ai-starter-vector-store-pgvector:${libs.versions.springAi.get()}"
     // spring-ai-agent-utils core library
     implementation libs.spring.ai.agent.utils
+    // StructuredOutputInvoker owns the retry budget and validates every parsed result locally.
+    implementation libs.json.schema.validator
 
     // Apache Tika for document parsing (PDF, DOCX, TXT)
     implementation libs.tika.core

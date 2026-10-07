@@ -1,0 +1,49 @@
+{
+  "version": "retest-sequence-v1",
+  "scope": "去标识化确定性 PREP 回归，不调用出题模型",
+  "cases": [
+    {
+      "id": "full-match",
+      "priorTrainingTasks": [
+        {"competency": "事务边界", "priority": 4},
+        {"competency": "幂等消费", "priority": 3}
+      ],
+      "questionCompetencies": ["事务边界", "幂等消费", "可观测性"],
+      "expectedRequestedFocus": 2,
+      "expectedPrioritized": 2,
+      "expectedRetestCoverage": 1.0
+    },
+    {
+      "id": "partial-match",
+      "priorTrainingTasks": [
+        {"competency": "RAG 证据", "priority": 4},
+        {"competency": "语音 Turn", "priority": 3}
+      ],
+      "questionCompetencies": ["RAG 证据", "系统设计"],
+      "expectedRequestedFocus": 2,
+      "expectedPrioritized": 1,
+      "expectedRetestCoverage": 0.5
+    },
+    {
+      "id": "deduplicated-history",
+      "priorTrainingTasks": [
+        {"competency": "事务边界", "priority": 4},
+        {"competency": "事务边界", "priority": 2},
+        {"competency": " 幂等消费 ", "priority": 3},
+        {"competency": "可观测性", "priority": 2}
+      ],
+      "questionCompetencies": ["事务边界", "幂等消费", "可观测性"],
+      "expectedRequestedFocus": 3,
+      "expectedPrioritized": 3,
+      "expectedRetestCoverage": 1.0
+    },
+    {
+      "id": "no-history",
+      "priorTrainingTasks": [],
+      "questionCompetencies": ["事务边界", "幂等消费"],
+      "expectedRequestedFocus": 0,
+      "expectedPrioritized": 0,
+      "expectedRetestCoverage": 0.0
+    }
+  ]
+}

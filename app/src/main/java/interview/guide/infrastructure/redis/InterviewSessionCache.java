@@ -3,6 +3,7 @@ package interview.guide.infrastructure.redis;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
 import interview.guide.modules.interview.model.InterviewQuestionDTO;
+import interview.guide.modules.interview.model.InterviewPlan;
 import interview.guide.modules.interview.model.InterviewSessionDTO.SessionStatus;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -52,23 +53,29 @@ public class InterviewSessionCache {
         private String sessionId;
         private String resumeText;
         private Long resumeId;
+        private String skillId;
+        private String difficulty;
         private String questionsJson;  // 序列化的问题列表
+        private String planJson;
         private int currentIndex;
         private SessionStatus status;
 
         public CachedSession() {
         }
 
-        public CachedSession(String sessionId, String resumeText, Long resumeId,
-                            List<InterviewQuestionDTO> questions, int currentIndex,
+        public CachedSession(String sessionId, String resumeText, Long resumeId, String skillId, String difficulty,
+                            List<InterviewQuestionDTO> questions, InterviewPlan plan, int currentIndex,
                             SessionStatus status, ObjectMapper objectMapper) {
             this.sessionId = sessionId;
             this.resumeText = resumeText;
             this.resumeId = resumeId;
+            this.skillId = skillId;
+            this.difficulty = difficulty;
             this.currentIndex = currentIndex;
             this.status = status;
             try {
                 this.questionsJson = objectMapper.writeValueAsString(questions);
+                this.planJson = objectMapper.writeValueAsString(plan);
             } catch (JacksonException e) {
                 throw new BusinessException(ErrorCode.INTERNAL_ERROR, "序列化问题列表失败", e);
             }
@@ -81,17 +88,28 @@ public class InterviewSessionCache {
                 throw new BusinessException(ErrorCode.INTERNAL_ERROR, "反序列化问题列表失败");
             }
         }
+
+        public InterviewPlan getPlan(ObjectMapper objectMapper) {
+            if (planJson == null || planJson.isBlank()) {
+                return null;
+            }
+            try {
+                return objectMapper.readValue(planJson, InterviewPlan.class);
+            } catch (JacksonException e) {
+                return null;
+            }
+        }
     }
 
     /**
      * 保存会话到缓存
      */
-    public void saveSession(String sessionId, String resumeText, Long resumeId,
-                           List<InterviewQuestionDTO> questions, int currentIndex,
+    public void saveSession(String sessionId, String resumeText, Long resumeId, String skillId, String difficulty,
+                           List<InterviewQuestionDTO> questions, InterviewPlan plan, int currentIndex,
                            SessionStatus status) {
         String key = buildSessionKey(sessionId);
         CachedSession cachedSession = new CachedSession(
-            sessionId, resumeText, resumeId, questions, currentIndex, status, objectMapper
+            sessionId, resumeText, resumeId, skillId, difficulty, questions, plan, currentIndex, status, objectMapper
         );
 
         redisService.set(key, cachedSession, SESSION_TTL);

@@ -2,8 +2,10 @@ package interview.guide.modules.knowledgebase.repository;
 
 import interview.guide.modules.knowledgebase.model.RagChatMessageEntity;
 import interview.guide.modules.knowledgebase.model.RagChatMessageEntity.MessageType;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -30,8 +32,26 @@ public interface RagChatMessageRepository extends JpaRepository<RagChatMessageEn
     /**
      * 获取会话中最近 N 条已完成的消息（按 messageOrder 倒序取，结果需要反转为正序）
      */
-    @Query("SELECT m FROM RagChatMessageEntity m WHERE m.session.id = :sessionId AND m.completed = true ORDER BY m.messageOrder DESC")
+    @Query("""
+        SELECT m FROM RagChatMessageEntity m
+        WHERE m.session.id = :sessionId AND m.completed = true
+          AND (m.generationState IS NULL OR m.generationState = interview.guide.modules.knowledgebase.model.RagGenerationState.COMPLETED)
+          AND EXISTS (SELECT p.id FROM RagChatMessageEntity p
+            WHERE p.session.id = m.session.id AND p.completed = true
+              AND (p.generationState IS NULL OR p.generationState = interview.guide.modules.knowledgebase.model.RagGenerationState.COMPLETED)
+              AND ((m.type = interview.guide.modules.knowledgebase.model.RagChatMessageEntity.MessageType.USER
+                    AND p.type = interview.guide.modules.knowledgebase.model.RagChatMessageEntity.MessageType.ASSISTANT
+                    AND p.messageOrder = m.messageOrder + 1)
+                OR (m.type = interview.guide.modules.knowledgebase.model.RagChatMessageEntity.MessageType.ASSISTANT
+                    AND p.type = interview.guide.modules.knowledgebase.model.RagChatMessageEntity.MessageType.USER
+                    AND p.messageOrder = m.messageOrder - 1)))
+        ORDER BY m.messageOrder DESC
+        """)
     List<RagChatMessageEntity> findRecentCompletedBySessionId(@Param("sessionId") Long sessionId, Pageable pageable);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT m FROM RagChatMessageEntity m WHERE m.id = :id")
+    Optional<RagChatMessageEntity> findByIdForUpdate(@Param("id") Long id);
 
     /**
     @Query("SELECT COUNT(m) FROM RagChatMessageEntity m WHERE m.session.id = :sessionId")

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="LIVE 追问观察策略" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:20.114Z" hostname="LAPTOP-BT5MEUFJ" time="0.008">
+  <properties/>
+  <testcase name="冻结样例按关键点、相关性和重复检测给出可复跑建议" classname="interview.guide.modules.interview.service.LiveFollowUpDecisionServiceTest" time="0.008"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

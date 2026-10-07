@@ -4,15 +4,20 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
+import interview.guide.modules.knowledgebase.model.VectorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.Optional;
 
 /**
  * 向量存储Repository
@@ -54,6 +59,55 @@ public class VectorRepository {
                 .score(lexicalScore)
                 .build();
         }, parameters.toArray());
+    }
+
+    /**
+     * 一次批量读取已命中分块的相邻 Chunk。
+     *
+     * <p>调用方只能传入已经通过检索选中的知识库与分块序号；本方法不执行语义检索，
+     * 也不会跨知识库扩展上下文。</p>
+     */
+    public List<Document> findChunksByKnowledgeBaseAndIndexes(Map<Long, Set<Integer>> indexesByKnowledgeBase) {
+        if (indexesByKnowledgeBase == null || indexesByKnowledgeBase.isEmpty()) {
+            return List.of();
+        }
+        Map<Long, List<Integer>> normalized = new LinkedHashMap<>();
+        indexesByKnowledgeBase.forEach((knowledgeBaseId, indexes) -> {
+            if (knowledgeBaseId == null || indexes == null) {
+                return;
+            }
+            List<Integer> validIndexes = indexes.stream()
+                .filter(index -> index != null && index >= 0)
+                .distinct()
+                .sorted()
+                .toList();
+            if (!validIndexes.isEmpty()) {
+                normalized.put(knowledgeBaseId, validIndexes);
+            }
+        });
+        if (normalized.isEmpty()) {
+            return List.of();
+        }
+
+        List<Object> parameters = new ArrayList<>();
+        List<String> predicates = new ArrayList<>();
+        normalized.forEach((knowledgeBaseId, indexes) -> {
+            String placeholders = String.join(",", indexes.stream().map(index -> "?").toList());
+            predicates.add("(metadata->>'kb_id' = ? AND (metadata->>'chunk_index')::int IN (" + placeholders + "))");
+            parameters.add(knowledgeBaseId.toString());
+            parameters.addAll(indexes);
+        });
+        String sql = """
+            SELECT id::text, content, metadata::text
+            FROM vector_store
+            WHERE %s
+            ORDER BY metadata->>'kb_id', (metadata->>'chunk_index')::int, id
+            """.formatted(String.join(" OR ", predicates));
+        return jdbcTemplate.query(sql, (resultSet, rowNum) -> Document.builder()
+            .id(resultSet.getString("id"))
+            .text(resultSet.getString("content"))
+            .metadata(parseMetadata(resultSet.getString("metadata")))
+            .build(), parameters.toArray());
     }
 
     private Map<String, Object> parseMetadata(String metadataJson) {
@@ -160,6 +214,45 @@ public class VectorRepository {
                 ErrorCode.KNOWLEDGE_BASE_VECTORIZATION_FAILED, "清理临时向量数据失败");
         }
     }
+
+  /** 在提升事务内锁住父文档；删除也需要这行的锁，避免提升后出现孤儿向量。 */
+  public boolean lockExistingKnowledgeBase(Long knowledgeBaseId) {
+    if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+      throw new BusinessException(ErrorCode.INTERNAL_ERROR, "向量提升必须在事务内校验父文档");
+    }
+    return Boolean.TRUE.equals(jdbcTemplate.query(
+        "SELECT id FROM knowledge_bases WHERE id = ? FOR UPDATE",
+        resultSet -> { return resultSet.next(); }, knowledgeBaseId));
+  }
+
+  public record VectorTaskState(String generation, VectorStatus status) {}
+
+  /** 仅在有效执行的提升事务内，清理同一父文档其他已失权 job 的临时块。 */
+  public int deleteSupersededPendingVectors(Long knowledgeBaseId, String currentJobId) {
+    if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+      throw new BusinessException(ErrorCode.INTERNAL_ERROR, "遗留临时向量清理必须位于有效提升事务中");
+    }
+    return jdbcTemplate.update("""
+        DELETE FROM vector_store
+        WHERE metadata->>'kb_target_id' = ?
+          AND metadata->>'kb_vector_job_id' IS NOT NULL
+          AND metadata->>'kb_vector_job_id' <> ?
+        """, knowledgeBaseId.toString(), currentJobId);
+  }
+
+  /** 由提升服务在父文档行锁内读取当前请求版本。 */
+  public Optional<VectorTaskState> findVectorTaskState(Long knowledgeBaseId) {
+    return jdbcTemplate.query("SELECT vector_generation, vector_status FROM knowledge_bases WHERE id = ?",
+        (row, number) -> new VectorTaskState(row.getString(1), VectorStatus.valueOf(row.getString(2))),
+        knowledgeBaseId).stream().findFirst();
+  }
+
+  /** 与正式向量替换处于同一事务，状态拒绝写入时向量替换也回滚。 */
+  public int completeVectorTask(Long knowledgeBaseId, String generation, int chunkCount) {
+    return jdbcTemplate.update("UPDATE knowledge_bases SET vector_status = 'COMPLETED', vector_error = NULL, "
+        + "chunk_count = ? WHERE id = ? AND vector_generation = ? AND vector_status <> 'COMPLETED'",
+        chunkCount, knowledgeBaseId, generation);
+  }
 
     /**
      * 将临时向量任务提升为当前知识库的正式向量数据。

@@ -132,6 +132,8 @@ class VoiceInterviewServiceTest {
             // When
             SessionResponseDTO response = voiceInterviewService.createSession(request);
 
+            assertEquals("/ws/voice-interview/1", response.getWebSocketUrl());
+
             // Then
             assertNotNull(response);
             assertEquals(1L, response.getSessionId());

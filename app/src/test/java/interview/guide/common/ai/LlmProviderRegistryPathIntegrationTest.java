@@ -1,6 +1,7 @@
 package interview.guide.common.ai;
 
 import com.sun.net.httpserver.HttpServer;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import interview.guide.common.config.LlmProviderProperties;
 import interview.guide.common.config.LlmProviderProperties.ProviderConfig;
 import org.junit.jupiter.api.AfterEach;
@@ -10,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,6 +37,7 @@ class LlmProviderRegistryPathIntegrationTest {
 
   private HttpServer server;
   private final List<String> receivedPaths = new CopyOnWriteArrayList<>();
+  private final List<String> receivedBodies = new CopyOnWriteArrayList<>();
   private int port;
 
   @BeforeEach
@@ -42,6 +45,7 @@ class LlmProviderRegistryPathIntegrationTest {
     server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
     server.createContext("/", exchange -> {
       receivedPaths.add(exchange.getRequestURI().getPath());
+      receivedBodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
       String body = """
           {
             "id": "chatcmpl-test",
@@ -73,11 +77,17 @@ class LlmProviderRegistryPathIntegrationTest {
   }
 
   private LlmProviderRegistry buildRegistryFor(String baseUrl) {
+    return buildRegistryFor(baseUrl, "test-model", Map.of());
+  }
+
+  private LlmProviderRegistry buildRegistryFor(String baseUrl, String model,
+      Map<String, Map<String, Object>> extras) {
     LlmProviderProperties properties = new LlmProviderProperties();
     ProviderConfig config = new ProviderConfig();
     config.setBaseUrl(baseUrl);
     config.setApiKey("test-key");
-    config.setModel("test-model");
+    config.setModel(model);
+    properties.setChatExtraBodyByModel(extras);
     Map<String, ProviderConfig> providers = new HashMap<>();
     providers.put("probe", config);
     properties.setProviders(providers);
@@ -123,5 +133,47 @@ class LlmProviderRegistryPathIntegrationTest {
 
     assertThat(receivedPaths).hasSize(1);
     assertThat(receivedPaths.get(0)).isEqualTo("/api/v3/chat/completions");
+  }
+
+  @Test
+  @DisplayName("上下文客户端不发送无关工具定义，默认客户端仍保留工具")
+  void contextClientOmitsTools() throws Exception {
+    var properties = new LlmProviderProperties();
+    var config = new ProviderConfig();
+    config.setBaseUrl("http://127.0.0.1:" + port);
+    config.setApiKey("test-key");
+    config.setModel("test-model");
+    properties.setProviders(Map.of("probe", config));
+    properties.setDefaultProvider("probe");
+    var callback = FunctionToolCallback.builder("controlled_skill", (String input) -> input)
+        .description("unrelated interview skill fixture").inputType(String.class).build();
+    var registry = new LlmProviderRegistry(properties, DefaultToolCallingManager.builder().build(), null, callback);
+    assertThat(registry.getChatClientOrDefault(null).prompt("公开问答").call().content()).isEqualTo("ok");
+    assertThat(registry.getChatClientOrDefault(null, LlmProviderRegistry.ToolAccess.NONE)
+        .prompt("公开问答").call().content()).isEqualTo("ok");
+    var mapper = new ObjectMapper();
+    assertThat(mapper.readTree(receivedBodies.get(0)).get("tools").isEmpty()).isFalse();
+    var context = mapper.readTree(receivedBodies.get(1));
+    assertThat(context.has("tools") && !context.get("tools").isEmpty()).isFalse();
+    assertThat(receivedBodies.get(1)).doesNotContain("controlled_skill");
+  }
+
+  @Test
+  @DisplayName("普通、结构化和语音客户端均将型号专属参数发送到请求顶层")
+  void clientVariantsSendModelSpecificExtras() throws Exception {
+    var registry = buildRegistryFor("http://127.0.0.1:" + port, "qwen3.8-flash",
+        Map.of("qwen3.8-flash", Map.of("enable_thinking", false, "preserve_thinking", false)));
+    for (var client : List.of(registry.getChatClient("probe"),
+        registry.getPlainChatClient("probe"), registry.getVoiceChatClient("probe"))) {
+      assertThat(client.prompt("hi").call().content()).isEqualTo("ok");
+    }
+    assertThat(receivedBodies).hasSize(3);
+    var mapper = new ObjectMapper();
+    for (String body : receivedBodies) {
+      var json = mapper.readTree(body);
+      assertThat(json.get("enable_thinking").asBoolean()).isFalse();
+      assertThat(json.get("preserve_thinking").asBoolean()).isFalse();
+      assertThat(json.has("extra_body")).isFalse();
+    }
   }
 }

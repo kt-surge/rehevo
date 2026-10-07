@@ -12,11 +12,22 @@ public class KnowledgeBaseQueryProperties {
     private Rewrite rewrite = new Rewrite();
     private Search search = new Search();
     private Hybrid hybrid = new Hybrid();
+    private ContextExpansion contextExpansion = new ContextExpansion();
     private Rerank rerank = new Rerank();
+    private EvidenceGate evidenceGate = new EvidenceGate();
+    private Routing routing = new Routing();
     private History history = new History();
+    private Citation citation = new Citation();
     private String systemPromptPath = "classpath:prompts/knowledgebase-query-system.st";
     private String userPromptPath = "classpath:prompts/knowledgebase-query-user.st";
     private String rewritePromptPath = "classpath:prompts/knowledgebase-query-rewrite.st";
+
+    @Data
+    public static class Citation {
+        /** 先验证断言支持与覆盖率，再决定是否默认开启。 */
+        private boolean enabled = false;
+        private String promptPath = "classpath:prompts/knowledgebase-citation-rules.st";
+    }
 
     @Data
     public static class Rewrite {
@@ -46,6 +57,13 @@ public class KnowledgeBaseQueryProperties {
     }
 
     @Data
+    public static class ContextExpansion {
+        /** 仅由 HYBRID_CONTEXT 显式启用，默认链路不扩展相邻 Chunk。 */
+        private int seedChunks = 2;
+        private int neighborsPerSeed = 2;
+    }
+
+    @Data
     public static class Rerank {
         private boolean enabled = false;
         private String workspaceId = "";
@@ -58,5 +76,17 @@ public class KnowledgeBaseQueryProperties {
     public static class History {
         private boolean enabled = true;
         private int maxMessages = 10;
+    }
+
+    @Data
+    public static class EvidenceGate {
+        /** OFF: 不计算；OBSERVE: 返回并记录但不拦截；ENFORCE: 证据不足时拒答。 */
+        private EvidenceGateMode mode = EvidenceGateMode.OBSERVE;
+    }
+
+    @Data
+    public static class Routing {
+        /** 默认只返回并记录路由建议；不因建议改变检索、澄清或拒答行为。 */
+        private RagRoutingMode mode = RagRoutingMode.OBSERVE;
     }
 }

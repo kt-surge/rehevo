@@ -1,0 +1,25 @@
+test_agent_review_does_not_satisfy_human_gate (test_fact_gold.FactGoldContractTest.test_agent_review_does_not_satisfy_human_gate) ... ok
+test_candidate_hit_and_final_context_are_scored_separately (test_fact_gold.FactGoldContractTest.test_candidate_hit_and_final_context_are_scored_separately) ... ok
+test_contiguous_chunks_can_jointly_cover_a_fact (test_fact_gold.FactGoldContractTest.test_contiguous_chunks_can_jointly_cover_a_fact) ... ok
+test_document_path_must_stay_in_package (test_fact_gold.FactGoldContractTest.test_document_path_must_stay_in_package) ... ok
+test_forged_review_type_is_rejected (test_fact_gold.FactGoldContractTest.test_forged_review_type_is_rejected) ... ok
+test_gap_between_chunks_is_not_joint_support (test_fact_gold.FactGoldContractTest.test_gap_between_chunks_is_not_joint_support) ... ok
+test_macro_and_requirement_micro_denominators_are_explicit (test_fact_gold.FactGoldContractTest.test_macro_and_requirement_micro_denominators_are_explicit) ... ok
+test_missing_and_failed_requests_stay_in_denominator (test_fact_gold.FactGoldContractTest.test_missing_and_failed_requests_stay_in_denominator) ... ok
+test_missing_condition_is_not_counted_as_complete (test_fact_gold.FactGoldContractTest.test_missing_condition_is_not_counted_as_complete) ... ok
+test_non_object_manifest_rows_fail_with_contract_error (test_fact_gold.FactGoldContractTest.test_non_object_manifest_rows_fail_with_contract_error) ... ok
+test_reference_facts_must_cover_condition (test_fact_gold.FactGoldContractTest.test_reference_facts_must_cover_condition) ... ok
+test_requirement_rank_counts_joint_evidence_and_context_loss (test_fact_gold.FactGoldContractTest.test_requirement_rank_counts_joint_evidence_and_context_loss) ... ok
+test_review_timestamp_requires_timezone (test_fact_gold.FactGoldContractTest.test_review_timestamp_requires_timezone) ... ok
+test_source_range_must_match_actual_chunk_text (test_fact_gold.FactGoldContractTest.test_source_range_must_match_actual_chunk_text) ... ok
+test_tampered_source_is_rejected (test_fact_gold.FactGoldContractTest.test_tampered_source_is_rejected) ... ok
+test_topic_and_source_isolation_prevent_split_leakage (test_fact_gold.FactGoldContractTest.test_topic_and_source_isolation_prevent_split_leakage) ... ok
+test_unanswerable_nonempty_retrieval_is_not_refusal_accuracy (test_fact_gold.FactGoldContractTest.test_unanswerable_nonempty_retrieval_is_not_refusal_accuracy) ... ok
+test_unknown_chunk_is_rejected (test_fact_gold.FactGoldContractTest.test_unknown_chunk_is_rejected) ... ok
+test_valid_contract_accepts_alternative_evidence (test_fact_gold.FactGoldContractTest.test_valid_contract_accepts_alternative_evidence) ... ok
+test_wrong_quote_is_rejected_even_with_same_document (test_fact_gold.FactGoldContractTest.test_wrong_quote_is_rejected_even_with_same_document) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 1.210s
+
+OK

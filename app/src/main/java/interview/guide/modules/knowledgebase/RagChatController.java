@@ -9,6 +9,8 @@ import interview.guide.modules.knowledgebase.model.RagChatDTO.SessionListItemDTO
 import interview.guide.modules.knowledgebase.model.RagChatDTO.UpdateKnowledgeBasesRequest;
 import interview.guide.modules.knowledgebase.model.RagChatDTO.UpdateTitleRequest;
 import interview.guide.modules.knowledgebase.service.RagChatSessionService;
+import interview.guide.modules.knowledgebase.service.RagChatStreamService;
+import interview.guide.modules.knowledgebase.model.RagStreamEventDTO;
 import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,7 @@ import java.util.List;
 public class RagChatController {
 
     private final RagChatSessionService sessionService;
+    private final RagChatStreamService streamService;
 
     /**
      * 创建新会话
@@ -100,7 +103,7 @@ public class RagChatController {
      */
     @DeleteMapping("/api/rag-chat/sessions/{sessionId}")
     public Result<Void> deleteSession(@PathVariable Long sessionId) {
-        sessionService.deleteSession(sessionId);
+        streamService.deleteSession(sessionId);
         return Result.success(null);
     }
 
@@ -113,37 +116,17 @@ public class RagChatController {
      */
     @PostMapping(value = "/api/rag-chat/sessions/{sessionId}/messages/stream",
                  produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public Flux<ServerSentEvent<String>> sendMessageStream(
+    public Flux<ServerSentEvent<RagStreamEventDTO>> sendMessageStream(
             @PathVariable Long sessionId,
             @Valid @RequestBody SendMessageRequest request) {
 
-        log.info("收到 RAG 聊天流式请求: sessionId={}, question={}, 线程: {} (虚拟线程: {})",
-            sessionId, request.question(), Thread.currentThread(), Thread.currentThread().isVirtual());
+        return streamService.stream(sessionId, request.question())
+            .map(event -> ServerSentEvent.<RagStreamEventDTO>builder()
+                .event(event.event()).data(event).build());
+    }
 
-        // 1. 准备消息（保存用户消息，创建 AI 消息占位）
-        Long messageId = sessionService.prepareStreamMessage(sessionId, request.question());
-
-        // 2. 获取流式响应
-        StringBuilder fullContent = new StringBuilder();
-
-        return sessionService.getStreamAnswer(sessionId, request.question())
-            .doOnNext(fullContent::append)
-            // 使用 ServerSentEvent 包装，转义换行符避免破坏 SSE 格式
-            .map(chunk -> ServerSentEvent.<String>builder()
-                .data(chunk.replace("\n", "\\n").replace("\r", "\\r"))
-                .build())
-            .doOnComplete(() -> {
-                // 3. 流式完成后更新消息内容
-                sessionService.completeStreamMessage(messageId, fullContent.toString());
-                log.info("RAG 聊天流式完成: sessionId={}, messageId={}", sessionId, messageId);
-            })
-            .doOnError(e -> {
-                // 错误时也保存已接收的内容
-                String content = !fullContent.isEmpty()
-                    ? fullContent.toString()
-                    : "【错误】回答生成失败：" + e.getMessage();
-                sessionService.completeStreamMessage(messageId, content);
-                log.error("RAG 聊天流式错误: sessionId={}", sessionId, e);
-            });
+    @PostMapping("/api/rag-chat/sessions/{sessionId}/messages/{messageId}/cancel")
+    public Result<RagStreamEventDTO> cancelMessage(@PathVariable Long sessionId, @PathVariable Long messageId) {
+        return Result.success(streamService.cancel(sessionId, messageId));
     }
 }

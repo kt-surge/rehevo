@@ -3,7 +3,12 @@ package interview.guide.modules.voiceinterview.repository;
 import interview.guide.modules.voiceinterview.model.VoiceInterviewSessionEntity;
 import interview.guide.modules.voiceinterview.model.VoiceInterviewSessionEntity.InterviewPhase;
 import interview.guide.modules.voiceinterview.model.VoiceInterviewSessionStatus;
+import interview.guide.common.model.AsyncTaskStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -15,6 +20,10 @@ import java.util.Optional;
  */
 @Repository
 public interface VoiceInterviewSessionRepository extends JpaRepository<VoiceInterviewSessionEntity, Long> {
+
+  @Lock(LockModeType.PESSIMISTIC_WRITE)
+  @Query("select session from VoiceInterviewSessionEntity session where session.id = :sessionId")
+  Optional<VoiceInterviewSessionEntity> findByIdForUpdate(@Param("sessionId") Long sessionId);
 
     /**
      * 根据用户ID查找所有会话，按开始时间倒序
@@ -52,4 +61,7 @@ public interface VoiceInterviewSessionRepository extends JpaRepository<VoiceInte
         interview.guide.common.model.AsyncTaskStatus evaluateStatus,
         LocalDateTime time
     );
+
+  List<VoiceInterviewSessionEntity> findTop10BySkillIdAndResumeIdAndEvaluateStatusOrderByCreatedAtDesc(
+      String skillId, Long resumeId, AsyncTaskStatus evaluateStatus);
 }

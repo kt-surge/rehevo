@@ -1,4 +1,6 @@
-import { request } from './request';
+import { VoiceInterviewWebSocket } from '../utils/voiceInterviewSocket';
+import { API_BASE_URL, request } from './request';
+import type { VoiceAudioFrame } from '../types/voiceAudio';
 
 // ========== 类型定义 ==========
 
@@ -44,6 +46,12 @@ export interface VoiceAnswerDetail {
   userAnswer: string;
   score: number;
   feedback: string;
+  evaluationStatus: 'SCORED' | 'UNANSWERED' | 'EVALUATION_FAILED';
+  rubricLevel: number;
+  answerEvidence: string[];
+  missingPoints: string[];
+  factualRisks: string[];
+  nextAction: string;
   referenceAnswer?: string | null;
   keyPoints?: string[] | null;
 }
@@ -51,11 +59,27 @@ export interface VoiceAnswerDetail {
 export interface VoiceEvaluationDetail {
   sessionId: number;
   totalQuestions: number;
+  answeredQuestions: number;
+  scoredQuestions: number;
+  failedQuestions: number;
+  evidenceSupportedQuestions: number;
+  evaluationCoverage: number;
+  evidenceCoverage: number;
   overallScore: number;
   overallFeedback: string;
   strengths: string[];
   improvements: string[];
+  trainingTasks: VoiceTrainingTask[];
   answers: VoiceAnswerDetail[];
+}
+
+export interface VoiceTrainingTask {
+  competency: string;
+  questionIndexes: number[];
+  reason: string;
+  action: string;
+  completionCriteria: string;
+  priority: number;
 }
 
 /**
@@ -96,30 +120,42 @@ export interface WebSocketSubtitleMessage {
   isFinal: boolean;
 }
 
-export interface WebSocketAudioResponseMessage {
+export interface WebSocketTurnMetadata {
+  sessionId?: string;
+  turnId?: string;
+  eventId?: string;
+  sequence?: number;
+  eventType?: string;
+  createdAt?: number;
+  turnPhase?: 'THINKING' | 'SPEAKING' | 'COMPLETED' | 'CANCELLED' | 'FAILED';
+}
+
+export interface WebSocketAudioResponseMessage extends WebSocketTurnMetadata {
   type: 'audio';
   data: string; // Base64 编码的音频
   text: string;
 }
 
-export interface WebSocketTextMessage {
+export interface WebSocketTextMessage extends WebSocketTurnMetadata {
   type: 'text';
   content: string;
   final?: boolean;
 }
 
-export interface WebSocketAudioChunkMessage {
+export interface WebSocketAudioChunkMessage extends WebSocketTurnMetadata {
   type: 'audio_chunk';
   data: string; // Base64 WAV
   index: number;
   isLast: boolean;
 }
 
-export interface WebSocketControlResponseMessage {
+export interface WebSocketControlResponseMessage extends WebSocketTurnMetadata {
   type: 'control';
   action: string;
   message?: string;
   timestamp?: number;
+  cancelRequestId?: string;
+  clientRequestId?: string;
 }
 
 export interface WebSocketErrorMessage {
@@ -133,6 +169,7 @@ export type WebSocketMessage =
   | WebSocketAudioResponseMessage
   | WebSocketTextMessage
   | WebSocketAudioChunkMessage
+  | VoiceAudioFrame
   | WebSocketControlResponseMessage
   | WebSocketErrorMessage;
 
@@ -140,10 +177,11 @@ export type WebSocketMessage =
 export interface WebSocketEventHandlers {
   onMessage?: (message: WebSocketMessage) => void;
   onSubtitle?: (text: string, isFinal: boolean) => void;
-  onAudioResponse?: (audioData: string, text: string) => void;
-  onTextResponse?: (text: string, isFinal: boolean) => void;
-  onAudioChunk?: (data: string, index: number, isLast: boolean) => void;
-  onControl?: (action: string, message?: string) => void;
+  onAudioResponse?: (audioData: string, text: string, turnId?: string) => void;
+  onTextResponse?: (text: string, isFinal: boolean, turnId?: string) => void;
+  onAudioChunk?: (data: string, index: number, isLast: boolean, turnId?: string) => void;
+  onAudioFrame?: (frame: VoiceAudioFrame) => void;
+  onControl?: (action: string, message?: string, turnId?: string, control?: WebSocketControlResponseMessage) => void;
   onErrorMessage?: (message: string) => void;
   onOpen?: () => void;
   onClose?: (event: CloseEvent) => void;
@@ -244,156 +282,7 @@ export const voiceInterviewApi = {
 
 // ========== WebSocket 连接管理类 ==========
 
-export class VoiceInterviewWebSocket {
-  private ws: WebSocket | null = null;
-  private url: string;
-  private handlers: WebSocketEventHandlers;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 3;
-  private reconnectDelay = 2000;
-
-  constructor(_sessionId: number, url: string, handlers: WebSocketEventHandlers) {
-    this.url = url;
-    this.handlers = handlers;
-  }
-
-  /**
-   * 建立 WebSocket 连接
-   */
-  connect(): void {
-    try {
-      this.ws = new WebSocket(this.url);
-
-      this.ws.onopen = () => {
-        this.reconnectAttempts = 0;
-        this.handlers.onOpen?.();
-      };
-
-      this.ws.onmessage = (event) => {
-        try {
-          const message = JSON.parse(event.data) as WebSocketMessage;
-
-          // 调用通用消息处理器
-          this.handlers.onMessage?.(message);
-
-          // 根据消息类型调用特定处理器
-          switch (message.type) {
-            case 'subtitle':
-              this.handlers.onSubtitle?.(
-                message.text,
-                (message as WebSocketSubtitleMessage).isFinal
-              );
-              break;
-            case 'audio':
-              // 检查是否是 AI 响应（包含 text 字段）
-              if ('text' in message) {
-                const audioMsg = message as WebSocketAudioResponseMessage;
-                this.handlers.onAudioResponse?.(audioMsg.data, audioMsg.text);
-              }
-              break;
-            case 'audio_chunk':
-              if ('index' in message) {
-                const chunkMsg = message as WebSocketAudioChunkMessage;
-                this.handlers.onAudioChunk?.(chunkMsg.data, chunkMsg.index, chunkMsg.isLast);
-              }
-              break;
-            case 'text':
-              if ('content' in message) {
-                const textMsg = message as WebSocketTextMessage;
-                this.handlers.onTextResponse?.(textMsg.content, !!textMsg.final);
-              }
-              break;
-            case 'control':
-              this.handlers.onControl?.(message.action, message.message);
-              break;
-            case 'error':
-              this.handlers.onErrorMessage?.(message.message);
-              break;
-          }
-        } catch (error) {
-          console.error('Error parsing WebSocket message:', error);
-        }
-      };
-
-      this.ws.onclose = (event) => {
-        this.handlers.onClose?.(event);
-
-        if (!event.wasClean && this.reconnectAttempts < this.maxReconnectAttempts) {
-          this.reconnectAttempts++;
-          setTimeout(() => this.connect(), this.reconnectDelay);
-        }
-      };
-
-      this.ws.onerror = (error) => {
-        this.handlers.onError?.(error);
-      };
-    } catch (error) {
-      console.error('Error creating WebSocket connection:', error);
-      this.handlers.onError?.(error as Event);
-    }
-  }
-
-  /**
-   * 发送音频数据
-   */
-  sendAudio(audioData: string): boolean {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const message: WebSocketAudioMessage = {
-        type: 'audio',
-        data: audioData,
-        timestamp: Date.now(),
-      };
-      this.ws.send(JSON.stringify(message));
-      return true;
-    }
-    console.warn('WebSocket is not connected');
-    return false;
-  }
-
-  /**
-   * 发送控制消息
-   */
-  sendControl(action: string, data?: Record<string, unknown>): boolean {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      const message = {
-        type: 'control',
-        action,
-        data,
-        timestamp: Date.now(),
-      };
-      this.ws.send(JSON.stringify(message));
-      return true;
-    }
-    console.warn('WebSocket is not connected');
-    return false;
-  }
-
-  /**
-   * 关闭连接
-   */
-  disconnect(): void {
-    if (this.ws) {
-      // 不重连
-      this.reconnectAttempts = this.maxReconnectAttempts;
-      this.ws.close(1000, 'User disconnected');
-      this.ws = null;
-    }
-  }
-
-  /**
-   * 获取连接状态
-   */
-  getReadyState(): number {
-    return this.ws?.readyState ?? WebSocket.CLOSED;
-  }
-
-  /**
-   * 是否已连接
-   */
-  isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
-  }
-}
+export { VoiceInterviewWebSocket };
 
 // ========== 便捷函数 ==========
 
@@ -405,7 +294,14 @@ export function connectWebSocket(
   webSocketUrl: string,
   handlers: WebSocketEventHandlers
 ): VoiceInterviewWebSocket {
-  const ws = new VoiceInterviewWebSocket(sessionId, webSocketUrl, handlers);
+  const apiOrigin = new URL(API_BASE_URL || '/', window.location.origin);
+  const socketUrl = new URL(webSocketUrl, apiOrigin);
+  if (socketUrl.protocol === 'https:') socketUrl.protocol = 'wss:';
+  if (socketUrl.protocol === 'http:') socketUrl.protocol = 'ws:';
+  if (socketUrl.protocol !== 'ws:' && socketUrl.protocol !== 'wss:') {
+    throw new Error('语音连接地址协议无效');
+  }
+  const ws = new VoiceInterviewWebSocket(sessionId, socketUrl.href, handlers);
   ws.connect();
   return ws;
 }

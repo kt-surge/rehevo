@@ -19,11 +19,31 @@ public class VoiceEvaluationDetailDTO {
 
     private Long sessionId;
     private int totalQuestions;
+    private int answeredQuestions;
+    private int scoredQuestions;
+    private int failedQuestions;
+    private int evidenceSupportedQuestions;
+    private double evaluationCoverage;
+    private double evidenceCoverage;
     private int overallScore;
     private String overallFeedback;
     private List<String> strengths;
     private List<String> improvements;
+    private List<TrainingTask> trainingTasks;
     private List<AnswerDetail> answers;
+
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class TrainingTask {
+        private String competency;
+        private List<Integer> questionIndexes;
+        private String reason;
+        private String action;
+        private String completionCriteria;
+        private int priority;
+    }
 
     @Data
     @Builder
@@ -36,6 +56,12 @@ public class VoiceEvaluationDetailDTO {
         private String userAnswer;
         private int score;
         private String feedback;
+        private String evaluationStatus;
+        private int rubricLevel;
+        private List<String> answerEvidence;
+        private List<String> missingPoints;
+        private List<String> factualRisks;
+        private String nextAction;
         private String referenceAnswer;
         private List<String> keyPoints;
     }

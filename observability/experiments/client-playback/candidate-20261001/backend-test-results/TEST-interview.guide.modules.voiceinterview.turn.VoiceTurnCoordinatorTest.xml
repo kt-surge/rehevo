@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="语音回复 Turn 状态协调器" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.814Z" hostname="LAPTOP-BT5MEUFJ" time="0.001">
+  <properties/>
+  <testcase name="新 Turn 会使旧 Turn 的异步回调失效" classname="interview.guide.modules.voiceinterview.turn.VoiceTurnCoordinatorTest" time="0.0"/>
+  <testcase name="取消后旧回调不能再取得出站事件" classname="interview.guide.modules.voiceinterview.turn.VoiceTurnCoordinatorTest" time="0.0"/>
+  <testcase name="同一会话的事件序号单调递增且阶段可追踪" classname="interview.guide.modules.voiceinterview.turn.VoiceTurnCoordinatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

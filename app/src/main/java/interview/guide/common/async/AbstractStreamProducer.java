@@ -26,7 +26,7 @@ public abstract class AbstractStreamProducer<T> {
         this.applicationMetrics = applicationMetrics;
     }
 
-    protected void sendTask(T payload) {
+    protected String sendTask(T payload) {
         try {
             String messageId = redisService.streamAdd(
                 streamKey(),
@@ -36,11 +36,13 @@ public abstract class AbstractStreamProducer<T> {
             log.info("{}任务已发送到Stream: {}, messageId={}",
                 taskDisplayName(), payloadIdentifier(payload), messageId);
             applicationMetrics.recordStreamEnqueued(streamKey(), ApplicationMetrics.Outcome.SUCCESS);
+            return messageId;
         } catch (Exception e) {
             log.error("发送{}任务失败: {}, error={}",
                 taskDisplayName(), payloadIdentifier(payload), e.getMessage(), e);
             onSendFailed(payload, "任务入队失败: " + e.getMessage());
             applicationMetrics.recordStreamEnqueued(streamKey(), ApplicationMetrics.Outcome.FAILURE);
+            return null;
         }
     }
 

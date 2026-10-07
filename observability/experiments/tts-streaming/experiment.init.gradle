@@ -1,0 +1,26 @@
+// 仅供实验运行，不改变 app/build.gradle，也不启动产品服务。
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def experimentDir = new File(gradle.rootProject.projectDir, 'observability/experiments/tts-streaming')
+    def outputClasses = appProject.layout.buildDirectory.dir('tts-experiment/classes')
+    appProject.tasks.register('compileRehevoTtsExperiment', JavaCompile) {
+        source new File(experimentDir, 'RehevoTtsExperiment.java')
+        classpath = appProject.configurations.runtimeClasspath
+        destinationDirectory = outputClasses
+        options.encoding = 'UTF-8'
+        javaCompiler = appProject.javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+    appProject.tasks.register('rehevoTtsExperiment', JavaExec) {
+        dependsOn 'compileRehevoTtsExperiment'
+        classpath = appProject.files(outputClasses) + appProject.configurations.runtimeClasspath
+        mainClass = 'RehevoTtsExperiment'
+        javaLauncher = appProject.javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+        args appProject.findProperty('ttsExperimentOutput'), appProject.findProperty('ttsExperimentPairs') ?: '1',
+            appProject.findProperty('ttsExperimentModel') ?: 'qwen-audio-3.1-tts-flash',
+            appProject.findProperty('ttsExperimentVoice') ?: 'longanhuan_v3.1'
+    }
+}

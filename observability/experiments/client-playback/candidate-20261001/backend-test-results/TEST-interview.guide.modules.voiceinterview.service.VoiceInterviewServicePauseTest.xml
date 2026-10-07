@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="语音面试暂停与恢复测试" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.298Z" hostname="LAPTOP-BT5MEUFJ" time="0.42">
+  <properties/>
+  <testcase name="暂停会话可以恢复并重建一小时缓存" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServicePauseTest" time="0.413"/>
+  <testcase name="进行中的会话可以暂停并清除缓存" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServicePauseTest" time="0.003"/>
+  <testcase name="非进行中会话不能暂停" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServicePauseTest" time="0.002"/>
+  <system-out><![CDATA[16:50:30.709 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Session 1 resumed with 2 messages in conversation history
+16:50:30.715 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Session 1 paused, reason: user_initiated
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

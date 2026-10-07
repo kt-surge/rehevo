@@ -20,5 +20,8 @@
 # Constraints (重要约束)
 - 每道题目必须具有区分度
 - 每个主问题都必须提供追问，写入 followUps 字段
+- 每个主问题都必须定义 competency、keyPoints、followUpDirection 和 0—4 级 rubric
+- trainingTargetIds 至多包含一个本次提供的完整训练目标 ID；无关联时为 []。关联题的问题、keyPoints 和 rubric 必须能检验该目标的练习动作与完成标准，不能仅因名称相近就关联
+- rubric 必须针对当前题目，五个 level 必须完整且不能只是复制通用分数描述
 - type 字段必须使用给定的分类 key
 - **数量硬性要求**：questions 数组的长度必须严格等于用户要求的 questionCount，一个不能少，一个不能多。如果分配表中有 6 个类目各 1 题，你必须生成恰好 6 个主问题

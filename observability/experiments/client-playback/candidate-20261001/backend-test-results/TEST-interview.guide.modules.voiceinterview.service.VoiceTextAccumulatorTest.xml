@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="语音流文本预算和完整句边界" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.798Z" hostname="LAPTOP-BT5MEUFJ" time="0.013">
+  <properties/>
+  <testcase name="空流采用同一条可播报的终稿且重复结束不重播" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.001"/>
+  <testcase name="预算最后一个字符上的句号不会先播出再被截断替换" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.001"/>
+  <testcase name="Markdown 清理和任意二段 Token 切分不改变最终播报内容" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.004"/>
+  <testcase name="截断结果与 Token 切分方式无关" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.002"/>
+  <testcase name="截断不会留下不完整的 Unicode 代理对" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.0"/>
+  <testcase name="恰好预算长度的完整回复在结束时不丢最后一个字符" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.0"/>
+  <testcase name="超预算时发出的全部语音文本与终稿一致且不再接受 Token" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.0"/>
+  <testcase name="英文句号确认边界后及时发句并保留句间空格" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.0"/>
+  <testcase name="Token 边界上的小数和版本号不会被切开" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.001"/>
+  <testcase name="一个 Token 的未完成尾巴不会随前一句提前播出" classname="interview.guide.modules.voiceinterview.service.VoiceTextAccumulatorTest" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

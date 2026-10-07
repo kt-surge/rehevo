@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
 
 public final class ApiPathResolver {
 
-  private static final int DEFAULT_CONNECT_TIMEOUT = 10000;
-  private static final int DEFAULT_READ_TIMEOUT = 300000;
+  static final int DEFAULT_CONNECT_TIMEOUT = 10000;
+  static final int DEFAULT_READ_TIMEOUT = 60000;
 
   private static final Pattern TRAILING_VERSION = Pattern.compile("/v\\d+[a-zA-Z0-9]*$");
 
@@ -26,17 +26,25 @@ public final class ApiPathResolver {
   public static OpenAIClient buildOpenAiClient(String baseUrl, String apiKey,
       int connectTimeout, int readTimeout) {
     Timeout timeout = Timeout.builder()
-        .connect(Duration.ofMillis(connectTimeout))
-        .read(Duration.ofMillis(readTimeout))
+        .connect(Duration.ofMillis(timeoutOrDefault(connectTimeout, DEFAULT_CONNECT_TIMEOUT)))
+        .read(Duration.ofMillis(timeoutOrDefault(readTimeout, DEFAULT_READ_TIMEOUT)))
         .build();
     ClientOptions options = ClientOptions.Companion.builder()
         .apiKey(apiKey)
         .credential(BearerTokenCredential.create(apiKey))
         .baseUrl(resolveVersionedBaseUrl(baseUrl))
         .timeout(timeout)
-        .httpClient(SpringAiOpenAiHttpClient.builder().timeout(timeout).build())
+        .httpClient(SpringAiOpenAiHttpClient.builder().timeout(timeout).interceptor(chain -> {
+          // 同步评估线程持有任务范围；Call.cancel() 能打断响应头和正文的阻塞读取。
+          AiCallCancellation.registerCurrent(chain.call()::cancel);
+          return chain.proceed(chain.request());
+        }).build())
         .build();
     return new OpenAIClientImpl(options);
+  }
+
+  static int timeoutOrDefault(int configuredTimeout, int defaultTimeout) {
+    return configuredTimeout > 0 ? configuredTimeout : defaultTimeout;
   }
 
   public static String resolveVersionedBaseUrl(String baseUrl) {

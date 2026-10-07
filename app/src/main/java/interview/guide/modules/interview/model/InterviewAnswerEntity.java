@@ -47,6 +47,24 @@ public class InterviewAnswerEntity {
     // 反馈
     @Column(columnDefinition = "TEXT")
     private String feedback;
+
+    // 评估状态：SCORED / UNANSWERED / EVALUATION_FAILED
+    private String evaluationStatus;
+
+    // 命中的题目级 Rubric 等级（0—4）
+    private Integer rubricLevel;
+
+    @Column(columnDefinition = "TEXT")
+    private String answerEvidenceJson;
+
+    @Column(columnDefinition = "TEXT")
+    private String missingPointsJson;
+
+    @Column(columnDefinition = "TEXT")
+    private String factualRisksJson;
+
+    @Column(columnDefinition = "TEXT")
+    private String nextAction;
     
     // 参考答案
     @Column(columnDefinition = "TEXT")
@@ -128,6 +146,54 @@ public class InterviewAnswerEntity {
     
     public void setFeedback(String feedback) {
         this.feedback = feedback;
+    }
+
+    public String getEvaluationStatus() {
+        return evaluationStatus;
+    }
+
+    public void setEvaluationStatus(String evaluationStatus) {
+        this.evaluationStatus = evaluationStatus;
+    }
+
+    public Integer getRubricLevel() {
+        return rubricLevel;
+    }
+
+    public void setRubricLevel(Integer rubricLevel) {
+        this.rubricLevel = rubricLevel;
+    }
+
+    public String getAnswerEvidenceJson() {
+        return answerEvidenceJson;
+    }
+
+    public void setAnswerEvidenceJson(String answerEvidenceJson) {
+        this.answerEvidenceJson = answerEvidenceJson;
+    }
+
+    public String getMissingPointsJson() {
+        return missingPointsJson;
+    }
+
+    public void setMissingPointsJson(String missingPointsJson) {
+        this.missingPointsJson = missingPointsJson;
+    }
+
+    public String getFactualRisksJson() {
+        return factualRisksJson;
+    }
+
+    public void setFactualRisksJson(String factualRisksJson) {
+        this.factualRisksJson = factualRisksJson;
+    }
+
+    public String getNextAction() {
+        return nextAction;
+    }
+
+    public void setNextAction(String nextAction) {
+        this.nextAction = nextAction;
     }
     
     public String getReferenceAnswer() {

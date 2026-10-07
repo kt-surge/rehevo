@@ -14,11 +14,30 @@ public class LlmProviderProperties {
     private String defaultProvider = "dashscope";
     private String defaultEmbeddingProvider;
     private Integer embeddingDimensions = 1024;
+    /**
+     * OpenAI-compatible provider HTTP connection deadline. A non-positive runtime value
+     * falls back to the resolver default, which also keeps mocked legacy configurations safe.
+     */
+    private int connectTimeoutMs = 10000;
+    /**
+     * Per-request read deadline. This bounds a failed provider call before batch/retry logic
+     * can amplify it into a long-running interview or benchmark request.
+     */
+    private int readTimeoutMs = 60000;
+    /** 按精确模型名配置非标准请求字段；连接预检与所有 ChatClient 共用。 */
+    private Map<String, Map<String, Object>> chatExtraBodyByModel = Map.of();
     private Map<String, ProviderConfig> providers;
     private AdvisorConfig advisors = new AdvisorConfig();
     private String configYamlPath;
     private String configEnvPath;
     private SecurityConfig security = new SecurityConfig();
+
+    public Map<String, Object> chatExtraBodyForModel(String model) {
+      if (model == null || chatExtraBodyByModel == null) {
+        return Map.of();
+      }
+      return chatExtraBodyByModel.getOrDefault(model, Map.of());
+    }
 
     @Data
     public static class ProviderConfig {

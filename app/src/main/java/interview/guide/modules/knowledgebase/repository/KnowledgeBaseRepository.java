@@ -16,6 +16,21 @@ import java.util.Optional;
  */
 @Repository
 public interface KnowledgeBaseRepository extends JpaRepository<KnowledgeBaseEntity, Long> {
+  @Query(value = "SELECT k.* FROM knowledge_bases k WHERE k.id=:id FOR UPDATE", nativeQuery = true)
+  Optional<KnowledgeBaseEntity> lockById(@Param("id") Long id);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("UPDATE KnowledgeBaseEntity k SET k.vectorGeneration = :generation, "
+      + "k.vectorStatus = interview.guide.modules.knowledgebase.model.VectorStatus.PENDING, "
+      + "k.vectorError = NULL WHERE k.id = :id")
+  int beginVectorTask(@Param("id") Long id, @Param("generation") String generation);
+
+  @Modifying(clearAutomatically = true, flushAutomatically = true)
+  @Query("UPDATE KnowledgeBaseEntity k SET k.vectorStatus = :status, k.vectorError = :error "
+      + "WHERE k.id = :id AND k.vectorGeneration = :generation "
+      + "AND k.vectorStatus <> interview.guide.modules.knowledgebase.model.VectorStatus.COMPLETED")
+  int updateVectorTaskStatus(@Param("id") Long id, @Param("generation") String generation,
+      @Param("status") VectorStatus status, @Param("error") String error);
 
     /**
      * 根据文件哈希查找知识库（用于去重）
@@ -104,4 +119,3 @@ public interface KnowledgeBaseRepository extends JpaRepository<KnowledgeBaseEnti
      */
     List<KnowledgeBaseEntity> findByVectorStatusOrderByUploadedAtDesc(VectorStatus vectorStatus);
 }
-

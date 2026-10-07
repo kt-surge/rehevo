@@ -1,12 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Clock, PhoneOff, AlertCircle, Bot, Mic, ArrowLeft, SendHorizonal } from 'lucide-react';
+import { Clock, PhoneOff, AlertCircle, Bot, Mic, ArrowLeft, SendHorizonal, Square } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AudioRecorder from '../components/AudioRecorder';
 import InterviewPageHeader from '../components/InterviewPageHeader';
 import RealtimeSubtitle from '../components/RealtimeSubtitle';
 import { skillApi, type SkillDTO } from '../api/skill';
 import { getTemplateName } from '../utils/voiceInterview';
+import { VoiceTurnTelemetry } from '../utils/voiceTurnTelemetry';
+import { VoiceAudioScheduler } from '../utils/voiceAudioScheduler';
+import { VoicePcmPlaybackObserver } from '../utils/voicePcmPlaybackObserver';
+import { decodeVoiceWav, VoicePcmFrameDecoder } from '../utils/voicePcmDecoder';
+import type { DecodedVoicePcm, VoiceAudioFrame, VoiceAudioTrace } from '../types/voiceAudio';
+import type { VoicePlaybackMode } from '../types/voiceTelemetry';
 import {
   voiceInterviewApi,
   connectWebSocket,
@@ -23,6 +29,9 @@ type VoiceConfig = {
   resumeId?: number;
   llmProvider?: string;
 };
+
+const continuousPlaybackEnabled = import.meta.env.VITE_VOICE_CONTINUOUS_PLAYBACK === 'true';
+const audioDiagnosticsEnabled = import.meta.env.VITE_VOICE_AUDIO_DIAGNOSTICS === 'true';
 
 export default function VoiceInterviewPage() {
   const navigate = useNavigate();
@@ -64,6 +73,7 @@ export default function VoiceInterviewPage() {
   const [templateName, setTemplateName] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isAsrReady, setIsAsrReady] = useState(false);
+  const [isAsrRetrying, setIsAsrRetrying] = useState(false);
 
   const [skills, setSkills] = useState<SkillDTO[]>([]);
 
@@ -86,7 +96,19 @@ export default function VoiceInterviewPage() {
   const chunkQueueRef = useRef<AudioBuffer[]>([]);
   const isChunkPlayingRef = useRef(false);
   const chunkPlaybackSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const chunkPlaybackTurnRef = useRef<string | null>(null);
+  const audioSchedulerRef = useRef<VoiceAudioScheduler | null>(null);
+  const legacyPlaybackObserverRef = useRef<VoicePcmPlaybackObserver | null>(null);
+  const frameDecoderRef = useRef(new VoicePcmFrameDecoder());
+  const frameAudioTurnRef = useRef(false);
+  const pcmAudioTurnRef = useRef(false);
+  const legacyPreviousEndRef = useRef<number | null>(null);
   const drainCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const activeAiTurnRef = useRef<string | null>(null);
+  const cancelledAiTurnsRef = useRef<Set<string>>(new Set());
+  const pendingCancelRequestRef = useRef<{ id: string; startedAtMs: number } | null>(null);
+  const playbackTelemetryRef = useRef(new VoiceTurnTelemetry());
+  const playbackGenerationRef = useRef(0);
   // Ref to track latest aiText for async callbacks (avoids stale closure)
   const aiTextRef = useRef('');
   useEffect(() => { aiTextRef.current = aiText; }, [aiText]);
@@ -110,6 +132,16 @@ export default function VoiceInterviewPage() {
       clearTimeout(audioPlaybackWatchdogRef.current);
       audioPlaybackWatchdogRef.current = null;
     }
+  }, []);
+
+  const shouldAcceptTurn = useCallback((turnId?: string) => {
+    if (!turnId) {
+      return true;
+    }
+    if (cancelledAiTurnsRef.current.has(turnId)) {
+      return false;
+    }
+    return activeAiTurnRef.current === null || activeAiTurnRef.current === turnId;
   }, []);
 
   const commitAiMessage = useCallback((rawText: string) => {
@@ -154,6 +186,7 @@ export default function VoiceInterviewPage() {
   }, []);
 
   const finishAiPlayback = useCallback(() => {
+    playbackTelemetryRef.current.clear();
     aiAudioPendingRef.current = false;
     clearAudioPlaybackWatchdog();
     setAiSpeaking(false);
@@ -165,34 +198,102 @@ export default function VoiceInterviewPage() {
   }, [clearAudioPlaybackWatchdog, clearPendingAiTextCommit, commitAiMessage, setAiSpeaking]);
 
   // --- Chunked audio playback via AudioContext ---
+  const recordPlaybackStart = useCallback((mode: VoicePlaybackMode, observedStartAtMs?: number) => {
+    const report = playbackTelemetryRef.current.playbackStarted(mode, observedStartAtMs);
+    if (report) {
+      wsRef.current?.sendControl('playback_observed', { ...report });
+    }
+  }, []);
+
+  const recordAudioTrace = useCallback((trace: VoiceAudioTrace) => {
+    if (audioDiagnosticsEnabled) {
+      const diagnostic = {
+        ...trace, scheduler: continuousPlaybackEnabled ? 'continuous' : 'legacy',
+        visibility: document.visibilityState,
+      };
+      // 断线时仍可保留本地清理证据；默认关闭，不记录音频、回答或凭据。
+      console.info('RehevoAudioDiagnostic ' + JSON.stringify(diagnostic));
+      queueMicrotask(() => wsRef.current?.sendControl('playback_diagnostics', diagnostic));
+    }
+  }, []);
+
   const getAudioContext = useCallback(() => {
     if (!audioContextRef.current || audioContextRef.current.state === 'closed') {
+      audioSchedulerRef.current?.cancel();
+      audioSchedulerRef.current = null;
+      legacyPlaybackObserverRef.current?.cancel();
+      legacyPlaybackObserverRef.current = null;
       audioContextRef.current = new AudioContext({ sampleRate: 24000 });
     }
     return audioContextRef.current;
   }, []);
 
-  const playNextChunk = useCallback(() => {
+  const playNextChunk = useCallback(async () => {
     if (chunkQueueRef.current.length === 0) {
       isChunkPlayingRef.current = false;
       return;
     }
     isChunkPlayingRef.current = true;
     const ctx = getAudioContext();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
+    const generation = playbackGenerationRef.current;
+    try {
+      if (ctx.state === 'suspended') {
+        await ctx.resume();
+      }
+      if (generation !== playbackGenerationRef.current || !isChunkPlayingRef.current) {
+        return;
+      }
+      const buffer = chunkQueueRef.current.shift();
+      if (!buffer) {
+        isChunkPlayingRef.current = false;
+        return;
+      }
+      const source = ctx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(ctx.destination);
+      chunkPlaybackSourceRef.current = source;
+      chunkPlaybackTurnRef.current = activeAiTurnRef.current;
+      source.onended = () => {
+        source.disconnect();
+        if (generation !== playbackGenerationRef.current) {
+          return;
+        }
+        legacyPlaybackObserverRef.current?.flush();
+        chunkPlaybackSourceRef.current = null;
+        chunkPlaybackTurnRef.current = null;
+        void playNextChunk();
+      };
+      const startAt = ctx.currentTime;
+      const scheduledAtMs = performance.now();
+      source.start(0);
+      if (activeAiTurnRef.current) {
+        recordAudioTrace({ kind: 'scheduled', turnId: activeAiTurnRef.current, generation,
+          atMs: performance.now(), scheduledAtSeconds: startAt, durationSeconds: buffer.duration,
+          gapMs: legacyPreviousEndRef.current === null ? 0 : Math.max(0, (startAt - legacyPreviousEndRef.current) * 1000),
+          pendingSources: 1, pendingSeconds: buffer.duration });
+      }
+      legacyPreviousEndRef.current = startAt + buffer.duration;
+      legacyPlaybackObserverRef.current ??= new VoicePcmPlaybackObserver(ctx);
+      legacyPlaybackObserverRef.current.observe(startAt, scheduledAtMs, observation => {
+        if (generation !== playbackGenerationRef.current) { return; }
+        if (activeAiTurnRef.current) {
+          recordAudioTrace({ kind: 'started', turnId: activeAiTurnRef.current, generation,
+            atMs: observation.atMs, scheduledAtSeconds: startAt,
+            clockBasis: observation.clockBasis, pendingSources: 1,
+            pendingSeconds: buffer.duration });
+        }
+        recordPlaybackStart(observation.playbackMode, observation.atMs);
+      });
+    } catch (playbackError) {
+      console.error('[ChunkAudio] Start error:', playbackError);
+      chunkQueueRef.current = [];
+      isChunkPlayingRef.current = false;
+      playbackTelemetryRef.current.clear();
+      setError('音频播放失败，请检查浏览器音频权限后重试');
+      setAiSpeaking(false);
+      setIsSubmitting(false);
     }
-    const buffer = chunkQueueRef.current.shift()!;
-    const source = ctx.createBufferSource();
-    source.buffer = buffer;
-    source.connect(ctx.destination);
-    chunkPlaybackSourceRef.current = source;
-    source.onended = () => {
-      chunkPlaybackSourceRef.current = null;
-      playNextChunk();
-    };
-    source.start(0);
-  }, [getAudioContext]);
+  }, [getAudioContext, recordPlaybackStart, recordAudioTrace, setAiSpeaking]);
 
   const scheduleChunkDrainCompletion = useCallback(() => {
     const startedAt = Date.now();
@@ -218,40 +319,115 @@ export default function VoiceInterviewPage() {
     }, 100);
   }, [clearPendingAiTextCommit, commitAiMessage, setAiSpeaking]);
 
-  const handleAudioChunk = useCallback((base64Wav: string, _index: number, isLast: boolean) => {
+  const stopActiveTurnPlayback = useCallback(() => {
+    const cleanupStartedAtMs = performance.now();
+    const legacyStoppedSources = chunkPlaybackSourceRef.current ? 1 : 0;
+    const discardedBuffers = chunkQueueRef.current.length;
+    const stoppedTurnId = chunkPlaybackTurnRef.current ?? activeAiTurnRef.current;
+    playbackGenerationRef.current++;
+    playbackTelemetryRef.current.clear();
+    clearAudioPlaybackWatchdog();
+    clearPendingAiTextCommit();
+    if (drainCheckRef.current) {
+      clearInterval(drainCheckRef.current);
+      drainCheckRef.current = null;
+    }
+    chunkPlaybackSourceRef.current?.stop();
+    chunkPlaybackSourceRef.current?.disconnect();
+    legacyPlaybackObserverRef.current?.cancel();
+    audioSchedulerRef.current?.cancel();
+    frameDecoderRef.current.clear();
+    frameAudioTurnRef.current = false;
+    pcmAudioTurnRef.current = false;
+    legacyPreviousEndRef.current = null;
+    chunkPlaybackSourceRef.current = null;
+    chunkPlaybackTurnRef.current = null;
+    chunkQueueRef.current = [];
+    isChunkPlayingRef.current = false;
+    if (!continuousPlaybackEnabled && stoppedTurnId && (legacyStoppedSources || discardedBuffers)) {
+      recordAudioTrace({ kind: 'cancelled', turnId: stoppedTurnId,
+        generation: playbackGenerationRef.current, atMs: performance.now(),
+        pendingSources: 0, pendingSeconds: 0, stoppedSources: legacyStoppedSources,
+        discardedBuffers, localSourceCleanupMs: performance.now() - cleanupStartedAtMs });
+    }
+    aiAudioPendingRef.current = false;
+    setAiAudio('');
+    setAiText('');
+    setAiSpeaking(false);
+    setIsSubmitting(false);
+  }, [clearAudioPlaybackWatchdog, clearPendingAiTextCommit, recordAudioTrace, setAiSpeaking]);
+
+  const failAudioPlayback = useCallback((playbackError: unknown) => {
+    console.error('语音播放失败', playbackError);
+    const turnId = activeAiTurnRef.current;
+    if (turnId) { cancelledAiTurnsRef.current.add(turnId); }
+    wsRef.current?.sendControl('cancel', { cancelRequestId: crypto.randomUUID() });
+    stopActiveTurnPlayback();
+    setError('本轮音频播放失败，已停止播放，请重新提交回答');
+  }, [stopActiveTurnPlayback]);
+
+  const getAudioScheduler = useCallback(() => {
+    if (!audioSchedulerRef.current) {
+      audioSchedulerRef.current = new VoiceAudioScheduler(getAudioContext(), {
+        onStarted: observation => recordPlaybackStart(observation.playbackMode, observation.atMs),
+        onDrained: finishAiPlayback,
+        onError: failAudioPlayback,
+        onTrace: recordAudioTrace,
+      });
+    }
+    return audioSchedulerRef.current;
+  }, [failAudioPlayback, finishAiPlayback, getAudioContext, recordAudioTrace, recordPlaybackStart]);
+
+  const enqueuePcm = useCallback((pcm: DecodedVoicePcm, turnId?: string) => {
+    const ctx = getAudioContext();
+    const audioBuffer = ctx.createBuffer(1, pcm.samples.length, pcm.sampleRate);
+    audioBuffer.getChannelData(0).set(pcm.samples);
+    if (continuousPlaybackEnabled && turnId) {
+      void getAudioScheduler().enqueue(audioBuffer, turnId);
+    } else {
+      chunkQueueRef.current.push(audioBuffer);
+      if (!isChunkPlayingRef.current) { void playNextChunk(); }
+    }
+  }, [getAudioContext, getAudioScheduler, playNextChunk]);
+
+  const handleAudioChunk = useCallback((base64Wav: string, _index: number, isLast: boolean, turnId?: string) => {
+    if (!shouldAcceptTurn(turnId)) {
+      return;
+    }
     try {
       aiAudioPendingRef.current = false;
       clearPendingAiTextCommit();
-      const binaryStr = atob(base64Wav);
-      const bytes = new Uint8Array(binaryStr.length);
-      for (let i = 0; i < binaryStr.length; i++) {
-        bytes[i] = binaryStr.charCodeAt(i);
-      }
-      const pcmOffset = 44;
-      const pcmData = new Int16Array(bytes.buffer, pcmOffset, (bytes.length - pcmOffset) / 2);
-      const float32 = new Float32Array(pcmData.length);
-      for (let i = 0; i < pcmData.length; i++) {
-        float32[i] = pcmData[i] / 32768.0;
-      }
-
-      const ctx = getAudioContext();
-      const audioBuffer = ctx.createBuffer(1, float32.length, 24000);
-      audioBuffer.getChannelData(0).set(float32);
-
-      chunkQueueRef.current.push(audioBuffer);
-      if (!isChunkPlayingRef.current) {
-        playNextChunk();
-      }
+      const pcm = decodeVoiceWav(base64Wav);
+      pcmAudioTurnRef.current = true;
+      playbackTelemetryRef.current.receivedAudio(turnId);
+      enqueuePcm(pcm, turnId);
 
       setAiSpeaking(true);
 
       if (isLast) {
-        scheduleChunkDrainCompletion();
+        if (continuousPlaybackEnabled && turnId) { getAudioScheduler().finish(); }
+        else { scheduleChunkDrainCompletion(); }
       }
     } catch (e) {
-      console.error('[ChunkAudio] Decode/play error:', e);
+      failAudioPlayback(e);
     }
-  }, [getAudioContext, playNextChunk, scheduleChunkDrainCompletion, setAiSpeaking]);
+  }, [enqueuePcm, failAudioPlayback, getAudioScheduler, scheduleChunkDrainCompletion, setAiSpeaking, shouldAcceptTurn]);
+
+  const handleAudioFrame = useCallback((frame: VoiceAudioFrame) => {
+    if (!shouldAcceptTurn(frame.turnId)) { return; }
+    try {
+      if (!continuousPlaybackEnabled) { throw new Error('客户端音频帧模式未开启'); }
+      const pcm = frameDecoderRef.current.accept(frame);
+      if (!pcm) { return; }
+      frameAudioTurnRef.current = true;
+      pcmAudioTurnRef.current = true;
+      aiAudioPendingRef.current = false;
+      clearPendingAiTextCommit();
+      playbackTelemetryRef.current.receivedAudio(frame.turnId);
+      enqueuePcm(pcm, frame.turnId);
+      setAiSpeaking(true);
+    } catch (error) { failAudioPlayback(error); }
+  }, [clearPendingAiTextCommit, enqueuePcm, failAudioPlayback, setAiSpeaking, shouldAcceptTurn]);
 
   // Load skills for template name display
   useEffect(() => {
@@ -276,6 +452,12 @@ export default function VoiceInterviewPage() {
       }
       clearAudioPlaybackWatchdog();
       chunkPlaybackSourceRef.current?.stop();
+      chunkPlaybackSourceRef.current?.disconnect();
+      legacyPlaybackObserverRef.current?.cancel();
+      legacyPlaybackObserverRef.current = null;
+      audioSchedulerRef.current?.cancel();
+      audioSchedulerRef.current = null;
+      frameDecoderRef.current.clear();
       audioContextRef.current?.close();
       if (drainCheckRef.current) {
         clearInterval(drainCheckRef.current);
@@ -348,6 +530,9 @@ export default function VoiceInterviewPage() {
     if (!userText.trim() || isAiSpeakingRef.current || isSubmitting) {
       return;
     }
+    setError(null);
+    // 提交是用户手势，在模型返回前恢复AudioContext，避免异步响应丢失激活机会。
+    void getAudioContext().resume().catch(failAudioPlayback);
     setIsRecording(false);
     setIsSubmitting(true);
     const text = userText.trim();
@@ -356,13 +541,19 @@ export default function VoiceInterviewPage() {
       { role: 'user', text, id: `user-${Date.now()}-${Math.random().toString(36).slice(2, 8)}` }
     ]);
     setUserText('');
-    wsRef.current.sendControl('submit', { text });
-  }, [userText, isSubmitting]);
+    const clientRequestId = crypto.randomUUID();
+    playbackTelemetryRef.current.submit(clientRequestId);
+    if (!wsRef.current.sendControl('submit', { text, clientRequestId })) {
+      playbackTelemetryRef.current.clear();
+      setIsSubmitting(false);
+    }
+  }, [failAudioPlayback, getAudioContext, userText, isSubmitting]);
 
   const createWebSocketHandlers = useCallback(() => ({
     onOpen: () => {
       setConnectionStatus('connected');
       setIsAsrReady(false);
+      pendingCancelRequestRef.current = null;
     },
     onMessage: () => {},
     onSubtitle: (text: string, isFinal: boolean) => {
@@ -383,10 +574,14 @@ export default function VoiceInterviewPage() {
         setUserText(text);
       }
     },
-    onAudioResponse: (audioData: string, text: string) => {
+    onAudioResponse: (audioData: string, text: string, turnId?: string) => {
+      if (!shouldAcceptTurn(turnId)) {
+        return;
+      }
       const hasAudio = !!(audioData && audioData.length > 0);
       const normalized = (text || '').trim();
       if (hasAudio) {
+        playbackTelemetryRef.current.receivedAudio(turnId);
         clearPendingAiTextCommit();
         clearAudioPlaybackWatchdog();
         aiAudioPendingRef.current = false;
@@ -415,7 +610,10 @@ export default function VoiceInterviewPage() {
         pendingAiTextCommitRef.current = null;
       }, 2500);
     },
-    onTextResponse: (text: string, isFinal: boolean) => {
+    onTextResponse: (text: string, isFinal: boolean, turnId?: string) => {
+      if (!shouldAcceptTurn(turnId)) {
+        return;
+      }
       const normalized = (text || '').trim();
       if (!normalized) {
         return;
@@ -428,6 +626,10 @@ export default function VoiceInterviewPage() {
       }
 
       clearPendingAiTextCommit();
+      if (continuousPlaybackEnabled && getAudioScheduler().isBusy()) {
+        aiAudioPendingRef.current = false;
+        return;
+      }
       pendingAiTextCommitRef.current = setTimeout(() => {
         if (aiAudioPendingRef.current) {
           aiAudioPendingRef.current = false;
@@ -439,38 +641,117 @@ export default function VoiceInterviewPage() {
       }, 15000);
     },
     onClose: (event: { code: number }) => {
+      if (activeAiTurnRef.current) { cancelledAiTurnsRef.current.add(activeAiTurnRef.current); }
+      activeAiTurnRef.current = null;
+      stopActiveTurnPlayback();
+      pendingCancelRequestRef.current = null;
       setConnectionStatus('disconnected');
       setIsAsrReady(false);
       clearPendingAiTextCommit();
       if (event.code !== 1000) {
-        setError('连接已断开，请刷新页面重试');
+        setError('连接已断开，正在尝试恢复；若未恢复，可返回面试记录继续');
       }
     },
     onError: () => {
+      if (activeAiTurnRef.current) { cancelledAiTurnsRef.current.add(activeAiTurnRef.current); }
+      activeAiTurnRef.current = null;
+      stopActiveTurnPlayback();
+      pendingCancelRequestRef.current = null;
       clearPendingAiTextCommit();
       clearAudioPlaybackWatchdog();
       setError('WebSocket 连接错误，请检查网络后重试');
       setConnectionStatus('disconnected');
       setIsAsrReady(false);
     },
-    onAudioChunk: (data: string, index: number, isLast: boolean) => {
-      handleAudioChunk(data, index, isLast);
+    onAudioChunk: (data: string, index: number, isLast: boolean, turnId?: string) => {
+      handleAudioChunk(data, index, isLast, turnId);
     },
-    onControl: (action: string, message?: string) => {
+    onAudioFrame: handleAudioFrame,
+    onControl: (action: string, message?: string, turnId?: string,
+                control?: { cancelRequestId?: string; clientRequestId?: string }) => {
+      if (action === 'turn_started' && turnId) {
+        audioSchedulerRef.current?.cancel();
+        legacyPlaybackObserverRef.current?.cancel();
+        frameDecoderRef.current.beginTurn(turnId);
+        frameAudioTurnRef.current = false;
+        pcmAudioTurnRef.current = false;
+        legacyPreviousEndRef.current = null;
+        if (continuousPlaybackEnabled) { getAudioScheduler().beginTurn(turnId); }
+        playbackTelemetryRef.current.bindTurn(turnId, control?.clientRequestId);
+        activeAiTurnRef.current = turnId;
+        cancelledAiTurnsRef.current.delete(turnId);
+        return;
+      }
+      if (action === 'turn_failed') {
+        if (!shouldAcceptTurn(turnId)) {
+          return;
+        }
+        if (turnId) {
+          cancelledAiTurnsRef.current.add(turnId);
+          if (activeAiTurnRef.current === turnId) {
+            activeAiTurnRef.current = null;
+          }
+        }
+        stopActiveTurnPlayback();
+        setError(message || '面试官回复失败，请重试');
+        return;
+      }
+      if (action === 'turn_cancelled' || action === 'cancel_confirmed') {
+        const pendingCancel = pendingCancelRequestRef.current;
+        if (pendingCancel && control?.cancelRequestId === pendingCancel.id) {
+          const elapsedMs = Math.round(performance.now() - pendingCancel.startedAtMs);
+          if (Number.isFinite(elapsedMs) && elapsedMs >= 0 && elapsedMs <= 60_000) {
+            wsRef.current?.sendControl('cancel_acknowledged', {
+              cancelRequestId: pendingCancel.id,
+              clientAckLatencyMs: elapsedMs,
+            });
+          }
+          pendingCancelRequestRef.current = null;
+        }
+        if (action === 'cancel_confirmed') { return; }
+        if (turnId && activeAiTurnRef.current && activeAiTurnRef.current !== turnId) {
+          cancelledAiTurnsRef.current.add(turnId);
+          return;
+        }
+        if (!turnId) { return; }
+        if (turnId) {
+          cancelledAiTurnsRef.current.add(turnId);
+          if (activeAiTurnRef.current === turnId) {
+            activeAiTurnRef.current = null;
+          }
+        }
+        stopActiveTurnPlayback();
+        return;
+      }
       if (action === 'asr_ready') {
         setIsAsrReady(true);
+        setIsAsrRetrying(false);
         setError(null);
         return;
       }
       if (action === 'asr_reconnecting') {
         setIsAsrReady(false);
+        setIsAsrRetrying(true);
         if (message) {
           setError(message);
         }
         return;
       }
+      if (action === 'asr_unavailable') {
+        setIsAsrReady(false);
+        setIsAsrRetrying(false);
+        setError(message || '语音识别暂不可用，请重新连接');
+        return;
+      }
       if (action === 'audio_complete') {
-        scheduleChunkDrainCompletion();
+        if (!shouldAcceptTurn(turnId)) { return; }
+        if (!pcmAudioTurnRef.current) { return; }
+        try {
+          if (continuousPlaybackEnabled && turnId) {
+            if (frameAudioTurnRef.current) { frameDecoderRef.current.finish(); }
+            getAudioScheduler().finish();
+          } else { scheduleChunkDrainCompletion(); }
+        } catch (error) { failAudioPlayback(error); }
         return;
       }
       if (action === 'pause_timeout_warning' && message) {
@@ -496,9 +777,28 @@ export default function VoiceInterviewPage() {
     estimateWavDurationMs,
     finishAiPlayback,
     handleAudioChunk,
+    handleAudioFrame,
+    failAudioPlayback,
+    getAudioScheduler,
     scheduleChunkDrainCompletion,
     setAiSpeaking,
+    shouldAcceptTurn,
+    stopActiveTurnPlayback,
   ]);
+
+  const handleCancelAiTurn = useCallback(() => {
+    const activeTurnId = activeAiTurnRef.current;
+    if (activeTurnId) {
+      cancelledAiTurnsRef.current.add(activeTurnId);
+      activeAiTurnRef.current = null;
+    }
+    const cancelRequestId = crypto.randomUUID();
+    pendingCancelRequestRef.current = { id: cancelRequestId, startedAtMs: performance.now() };
+    if (!wsRef.current?.sendControl('cancel', { cancelRequestId })) {
+      pendingCancelRequestRef.current = null;
+    }
+    stopActiveTurnPlayback();
+  }, [stopActiveTurnPlayback]);
 
   const connectWithHandlers = useCallback((sessionId: number, wsUrl: string) => {
     setIsAsrReady(false);
@@ -543,7 +843,7 @@ export default function VoiceInterviewPage() {
       setSessionId(session.sessionId);
       setCurrentPhase(session.currentPhase);
 
-      const wsUrl = session.webSocketUrl || `ws://localhost:8080/ws/voice-interview/${session.sessionId}`;
+      const wsUrl = session.webSocketUrl || `/ws/voice-interview/${session.sessionId}`;
       connectWithHandlers(session.sessionId, wsUrl);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '创建面试会话失败，请重试';
@@ -604,7 +904,7 @@ export default function VoiceInterviewPage() {
       }
       setMessages(restored);
 
-      const wsUrl = session.webSocketUrl || `ws://localhost:8080/ws/voice-interview/${session.sessionId}`;
+      const wsUrl = session.webSocketUrl || `/ws/voice-interview/${session.sessionId}`;
       connectWithHandlers(session.sessionId, wsUrl);
     } catch (error) {
       setError(error instanceof Error ? error.message : '恢复会话失败');
@@ -854,6 +1154,22 @@ export default function VoiceInterviewPage() {
 
             <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-5">
               <div className="flex items-center justify-center gap-6">
+                {connectionStatus === 'connected' && !isAsrReady && !isAiSpeaking && !isSubmitting && (
+                  <button
+                    onClick={() => {
+                      setIsAsrRetrying(true);
+                      setError(null);
+                      if (!wsRef.current?.sendControl('reconnect_asr')) {
+                        setIsAsrRetrying(false);
+                        setError('连接不可用，请返回面试记录继续');
+                      }
+                    }}
+                    disabled={isAsrRetrying}
+                    className="px-4 py-2.5 rounded-xl bg-primary-50 text-primary-700 disabled:opacity-50"
+                  >
+                    {isAsrRetrying ? '正在连接...' : '重新连接语音'}
+                  </button>
+                )}
                 <button
                   onClick={() => {
                     const choice = window.confirm('暂停面试？\n确定 = 短暂停（5分钟）\n取消 = 离开并保存');
@@ -888,6 +1204,18 @@ export default function VoiceInterviewPage() {
                   <span className="inline-flex items-center gap-1.5">
                     <SendHorizonal className="w-4 h-4" />
                     提交回答
+                  </span>
+                </button>
+
+                <button
+                  onClick={handleCancelAiTurn}
+                  disabled={!isSubmitting && !isAiSpeaking}
+                  className="px-4 py-2.5 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors disabled:opacity-50"
+                  title="停止本轮回复"
+                >
+                  <span className="inline-flex items-center gap-1">
+                    <Square className="w-3.5 h-3.5 fill-current" />
+                    停止回复
                   </span>
                 </button>
 
@@ -928,6 +1256,7 @@ export default function VoiceInterviewPage() {
             finishAiPlayback();
           }}
           onPlay={() => setAiSpeaking(true)}
+          onPlaying={() => recordPlaybackStart('html_playing')}
           autoPlay
           style={{ display: 'none' }}
         />

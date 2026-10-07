@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="面试 PREP 计划" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:19.763Z" hostname="LAPTOP-BT5MEUFJ" time="0.027">
+  <properties/>
+  <testcase name="上一场训练任务会提高同能力点的本场优先级" classname="interview.guide.modules.interview.service.InterviewPlanServiceTest" time="0.005"/>
+  <testcase name="最多取三个去重历史重点，计划分子不会超过分母" classname="interview.guide.modules.interview.service.InterviewPlanServiceTest" time="0.001"/>
+  <testcase name="冻结跨场序列按历史重点覆盖口径生成 PREP 计划" classname="interview.guide.modules.interview.service.InterviewPlanServiceTest" time="0.019"/>
+  <testcase name="按能力点聚合主问题并忽略追问" classname="interview.guide.modules.interview.service.InterviewPlanServiceTest" time="0.0"/>
+  <testcase name="历史重点未全部出现在本场题单时，复测覆盖率如实反映缺口" classname="interview.guide.modules.interview.service.InterviewPlanServiceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

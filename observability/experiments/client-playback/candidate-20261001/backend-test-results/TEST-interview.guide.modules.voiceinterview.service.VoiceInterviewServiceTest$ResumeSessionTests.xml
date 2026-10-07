@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="会话恢复测试" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.787Z" hostname="LAPTOP-BT5MEUFJ" time="0.005">
+  <properties/>
+  <testcase name="恢复会话 - 验证历史记录加载" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ResumeSessionTests" time="0.001"/>
+  <testcase name="恢复会话 - 会话不存在" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ResumeSessionTests" time="0.001"/>
+  <testcase name="恢复会话 - 状态必须为PAUSED" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ResumeSessionTests" time="0.002"/>
+  <system-out><![CDATA[16:50:30.789 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Session 1 resumed with 2 messages in conversation history
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

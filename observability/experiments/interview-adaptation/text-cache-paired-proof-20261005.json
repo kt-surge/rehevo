@@ -1,0 +1,13 @@
+{
+  "pairedInputIdentical": true,
+  "inputSha256": "26f95dac67bf55564807d51ee2f52ec50557fcdec98d8b0b9e6dd83d35c11a85",
+  "runs": [
+    "business-persistence-cache-baseline-20261005-r1",
+    "business-persistence-cache-candidate-20261005-r1",
+    "business-persistence-cache-integration-20261005-r1",
+    "text-delete-live-baseline-20261005-r1",
+    "text-delete-live-candidate-20261005-r1"
+  ],
+  "externalModelCalls": 0,
+  "restoredDataScope": true
+}

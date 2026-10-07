@@ -1,14 +1,17 @@
-import {useEffect, useMemo, useRef, useState, useTransition} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {AnimatePresence, motion} from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {Virtuoso, type VirtuosoHandle} from 'react-virtuoso';
 import {knowledgeBaseApi, type KnowledgeBaseItem, type SortOption} from '../api/knowledgebase';
-import {ragChatApi, type RagChatSessionListItem} from '../api/ragChat';
+import {ragChatApi, type RagChatEvidence, type RagChatSessionListItem} from '../api/ragChat';
 import {formatDateOnly} from '../utils/date';
+import {evidenceAnchor, remarkRagCitations} from '../utils/ragCitationMarkdown';
+import type {CitationValidationReport} from '../types/ragCitation';
+import type {RagDisplayState, RagStreamEvent} from '../types/ragChat';
 import DeleteConfirmDialog from '../components/DeleteConfirmDialog';
 import CodeBlock from '../components/CodeBlock';
-import {ChevronLeft, ChevronRight, Edit, MessageSquare, Pin, Plus, Trash2,} from 'lucide-react';
+import {ChevronLeft, ChevronRight, Edit, MessageSquare, Pin, Plus, Square, Trash2,} from 'lucide-react';
 
 interface KnowledgeBaseQueryPageProps {
   onBack: () => void;
@@ -20,6 +23,11 @@ interface Message {
   type: 'user' | 'assistant';
   content: string;
   timestamp: Date;
+  evidence?: RagChatEvidence[];
+  citationValidation?: CitationValidationReport | null;
+  requestKey?: string;
+  generationState?: RagDisplayState | null;
+  statusMessage?: string;
 }
 
 interface CategoryGroup {
@@ -55,12 +63,27 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
   const [question, setQuestion] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [expandedSourceMessages, setExpandedSourceMessages] = useState<Set<string>>(new Set());
 
   // refs
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const rafRef = useRef<number>();
+  const activeRequest = useRef<{key: string; controller: AbortController; sessionId?: number;
+    messageId?: number; terminal: boolean; content: string; stopping: boolean} | null>(null);
+  const viewVersion = useRef(0);
 
-  const [, startTransition] = useTransition();
+  const releaseRequest = () => {
+    const active = activeRequest.current;
+    activeRequest.current = null;
+    if (rafRef.current) cancelAnimationFrame(rafRef.current);
+    if (active && !active.terminal && active.sessionId && active.messageId) {
+      void ragChatApi.cancelMessage(active.sessionId, active.messageId)
+        .catch(error => console.error('停止旧会话生成失败', error));
+    }
+    active?.controller.abort();
+  };
+
+  useEffect(() => () => { viewVersion.current++; releaseRequest(); }, []);
 
   useEffect(() => {
     loadKnowledgeBases();
@@ -156,6 +179,9 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
   };
 
   const handleToggleKb = (kbId: number) => {
+    viewVersion.current++;
+    releaseRequest();
+    setLoading(false);
     setSelectedKbIds(prev => {
       const newSet = new Set(prev);
       if (newSet.has(kbId)) {
@@ -173,14 +199,21 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
   };
 
   const handleNewSession = () => {
+    viewVersion.current++;
+    releaseRequest();
+    setLoading(false);
     setCurrentSessionId(null);
     setCurrentSessionTitle('');
     setMessages([]);
   };
 
   const handleLoadSession = async (sessionId: number) => {
+    const version = ++viewVersion.current;
+    releaseRequest();
+    setLoading(false);
     try {
       const detail = await ragChatApi.getSessionDetail(sessionId);
+      if (version !== viewVersion.current) return;
       setCurrentSessionId(detail.id);
       setCurrentSessionTitle(detail.title);
       setSelectedKbIds(new Set(detail.knowledgeBases.map(kb => kb.id)));
@@ -189,6 +222,9 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
         type: m.type,
         content: m.content,
         timestamp: new Date(m.createdAt),
+        evidence: m.evidence || [],
+        citationValidation: m.citationValidation,
+        generationState: m.generationState ?? (m.completed === false ? 'LEGACY_INCOMPLETE' : null),
       })));
     } catch (err) {
       console.error('加载会话失败', err);
@@ -242,8 +278,6 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
   const formatMarkdown = (text: string): string => {
     if (!text) return '';
     return text
-      // 处理转义换行符
-      .replace(/\\n/g, '\n')
       // 确保标题 # 后有空格
       .replace(/^(#{1,6})([^\s#\n])/gm, '$1 $2')
       // 确保有序列表数字后有空格（如 1.xxx -> 1. xxx）
@@ -258,6 +292,12 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
     if (!question.trim() || selectedKbIds.size === 0 || loading) return;
 
     const userQuestion = question.trim();
+    const version = ++viewVersion.current;
+    const active = {key: crypto.randomUUID(), controller: new AbortController(),
+      sessionId: currentSessionId ?? undefined, messageId: undefined as number | undefined,
+      terminal: false, content: '', stopping: false};
+    activeRequest.current = active;
+    const isCurrent = () => activeRequest.current === active && viewVersion.current === version;
     setQuestion('');
     setLoading(true);
 
@@ -265,12 +305,16 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
     if (!sessionId) {
       try {
         const session = await ragChatApi.createSession(Array.from(selectedKbIds));
+        if (!isCurrent() || active.controller.signal.aborted) return;
         sessionId = session.id;
+        active.sessionId = session.id;
         setCurrentSessionId(sessionId);
         setCurrentSessionTitle(session.title);
       } catch (err) {
+        if (!isCurrent()) return;
         console.error('创建会话失败', err);
         setLoading(false);
+        activeRequest.current = null;
         return;
       }
     }
@@ -286,53 +330,76 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
       type: 'assistant',
       content: '',
       timestamp: new Date(),
+      requestKey: active.key,
+      generationState: 'GENERATING',
     };
     setMessages(prev => [...prev, assistantMessage]);
 
-    let fullContent = '';
-    const updateAssistantMessage = (content: string) => {
-      setMessages(prev => {
-        const newMessages = [...prev];
-        const lastIndex = newMessages.length - 1;
-        if (lastIndex >= 0 && newMessages[lastIndex].type === 'assistant') {
-          newMessages[lastIndex] = {
-            ...newMessages[lastIndex],
-            content: content,
-          };
-        }
-        return newMessages;
-      });
+    const updateAssistantMessage = (changes: Partial<Message>) => {
+      if (!isCurrent()) return;
+      setMessages(prev => isCurrent() ? prev.map(item => item.requestKey === active.key
+        ? {...item, ...changes} : item) : prev);
     };
-
-    try {
-      await ragChatApi.sendMessageStream(
-        sessionId,
-        userQuestion,
-        (chunk: string) => {
-          fullContent += chunk;
-          if (rafRef.current) {
-            cancelAnimationFrame(rafRef.current);
-          }
-          rafRef.current = requestAnimationFrame(() => {
-            startTransition(() => {
-              updateAssistantMessage(fullContent);
-            });
-          });
-        },
-        () => {
-          setLoading(false);
-          loadSessions();
-        },
-        (error: Error) => {
-          console.error('流式查询失败:', error);
-          updateAssistantMessage(fullContent || error.message || '回答失败，请重试');
-          setLoading(false);
-        }
-      );
-    } catch (err) {
-      console.error('发起流式查询失败:', err);
-      updateAssistantMessage(err instanceof Error ? err.message : '回答失败，请重试');
+    const end = (event: RagStreamEvent) => {
+      if (!isCurrent() || active.terminal) return;
+      active.terminal = true;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      updateAssistantMessage({content: active.content, generationState: event.generationState,
+        statusMessage: event.message ?? undefined});
       setLoading(false);
+      void loadSessions();
+      // 只刷新来源/状态；保存失败保留本页内容，避免用空占位覆盖它。
+      if (event.errorCode !== 'SAVE_FAILED') {
+        void ragChatApi.getSessionDetail(sessionId!).then(detail => {
+          if (!isCurrent()) return;
+          const saved = detail.messages.find(item => item.id === active.messageId);
+          if (saved) updateAssistantMessage({evidence: saved.evidence || [], citationValidation: saved.citationValidation});
+        }).catch(error => console.error('加载回答来源失败', error));
+      }
+    };
+    await ragChatApi.sendMessageStream(sessionId, userQuestion, {
+      signal: active.controller.signal,
+      onStart: messageId => { active.messageId = messageId; updateAssistantMessage({id: messageId}); },
+      onDelta: chunk => {
+        if (!isCurrent() || active.terminal) return;
+        active.content += chunk;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        rafRef.current = requestAnimationFrame(() => updateAssistantMessage({content: active.content}));
+      },
+      onTerminal: end,
+      onError: error => {
+        if (!isCurrent() || active.terminal || active.stopping) return;
+        if (rafRef.current) cancelAnimationFrame(rafRef.current);
+        updateAssistantMessage({content: active.content, generationState: 'INTERRUPTED', statusMessage: error.message});
+        setLoading(false);
+        active.terminal = true;
+        if (active.messageId) void ragChatApi.cancelMessage(sessionId!, active.messageId)
+          .catch(failure => console.error('清理中断生成失败', failure));
+      },
+    });
+  };
+
+  const handleStopGeneration = async () => {
+    const active = activeRequest.current;
+    if (!active || active.terminal || active.stopping) return;
+    active.stopping = true;
+    try {
+      if (!active.sessionId || !active.messageId) {
+        throw new Error('连接尚未建立，已停止等待；服务端会在断连或超时后结束生成');
+      }
+      const event = await ragChatApi.cancelMessage(active.sessionId, active.messageId);
+      if (activeRequest.current !== active) return;
+      active.terminal = true;
+      setMessages(prev => prev.map(item => item.requestKey === active.key ? {...item, content: active.content,
+        generationState: event.generationState, statusMessage: event.message ?? undefined} : item));
+    } catch (error) {
+      if (activeRequest.current !== active) return;
+      setMessages(prev => prev.map(item => item.requestKey === active.key ? {...item, content: active.content,
+        generationState: 'INTERRUPTED', statusMessage: error instanceof Error ? error.message : '停止失败，请刷新确认'} : item));
+    } finally {
+      active.controller.abort();
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (activeRequest.current === active) { setLoading(false); active.terminal = true; void loadSessions(); }
     }
   };
 
@@ -524,7 +591,7 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
                       ref={virtuosoRef}
                       data={messages}
                       initialTopMostItemIndex={messages.length - 1}
-                      followOutput="smooth"
+                      followOutput={loading ? 'smooth' : false}
                       className="h-full w-full"
                       itemContent={(index, msg) => (
                           <div className="pb-4 px-4 first:pt-4 dark:bg-slate-800">
@@ -544,8 +611,24 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
                               ) : (
                                   <div className="prose prose-slate dark:prose-invert prose-sm max-w-none">
                                   <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
+                                    remarkPlugins={[remarkGfm, [remarkRagCitations, {
+                                      evidenceIds: (msg.evidence || []).flatMap(e => e.evidenceId ? [e.evidenceId] : []),
+                                      scope: String(msg.id ?? `pending-${index}`),
+                                    }]]}
                                     components={{
+                                      a: ({href, children, title}) => {
+                                        const sourceId = (msg.evidence || []).find(e => e.evidenceId &&
+                                          href === `#${evidenceAnchor(String(msg.id ?? `pending-${index}`), e.evidenceId)}`);
+                                        if (!sourceId) return <a href={href} title={title}>{children}</a>;
+                                        return <a href={href} title={title} onClick={event => {
+                                          event.preventDefault();
+                                          const scope = String(msg.id ?? `pending-${index}`);
+                                          setExpandedSourceMessages(previous => new Set(previous).add(scope));
+                                          requestAnimationFrame(() => {
+                                            document.getElementById(href!.slice(1))?.scrollIntoView({block: 'nearest'});
+                                          });
+                                        }}>{children}</a>;
+                                      },
                                       // 自定义代码块渲染
                                       code: ({ className, children }) => {
                                         const match = /language-(\w+)/.exec(className || '');
@@ -573,6 +656,54 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
                                   >
                                     {formatMarkdown(msg.content)}
                                   </ReactMarkdown>
+                                  {msg.generationState && msg.generationState !== 'COMPLETED' && (
+                                    <p role="status" className="mt-3 text-xs text-amber-700 dark:text-amber-300 not-prose">
+                                      {msg.generationState === 'GENERATING' ? '正在生成…' :
+                                        msg.generationState === 'CANCELLED' ? '已停止，回答未完成' :
+                                        msg.generationState === 'FAILED' ? (msg.statusMessage || '生成失败，回答未完成') :
+                                        msg.generationState === 'LEGACY_INCOMPLETE' ? '历史回答未完成' :
+                                        (msg.statusMessage || '连接中断，回答未完成')}
+                                    </p>
+                                  )}
+                                  {msg.evidence && msg.evidence.length > 0 && !loading && (
+                                    <details open={expandedSourceMessages.has(String(msg.id ?? `pending-${index}`))}
+                                      onToggle={event => {
+                                        const open = event.currentTarget.open;
+                                        const scope = String(msg.id ?? `pending-${index}`);
+                                        setExpandedSourceMessages(previous => {
+                                          if (previous.has(scope) === open) return previous;
+                                          const next = new Set(previous);
+                                          if (open) next.add(scope); else next.delete(scope);
+                                          return next;
+                                        });
+                                      }}
+                                      className="mt-4 rounded-xl border border-primary-100 dark:border-primary-900/50 bg-primary-50/50 dark:bg-primary-950/20 not-prose">
+                                      <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-primary-700 dark:text-primary-300">
+                                        检索来源（{msg.evidence.length} 个片段）
+                                      </summary>
+                                      <div className="space-y-2 px-3 pb-3">
+                                        {msg.evidence.map((evidence, evidenceIndex) => (
+                                          <div key={`${evidence.documentSha256}-${evidence.chunkIndex}-${evidenceIndex}`}
+                                            id={evidence.evidenceId ? evidenceAnchor(String(msg.id ?? `pending-${index}`), evidence.evidenceId) : undefined}
+                                            className="rounded-lg bg-white/80 dark:bg-slate-900/70 p-2.5 text-xs text-slate-600 dark:text-slate-300">
+                                            <div className="mb-1 flex flex-wrap gap-x-2 text-slate-500 dark:text-slate-400">
+                                              <span>{evidence.evidenceId ? `[${evidence.evidenceId}]` : `来源 ${evidenceIndex + 1}`}</span>
+                                              {evidence.chunkIndex !== null && <span>片段 {evidence.chunkIndex + 1}</span>}
+                                              {evidence.originalFilename && <span>{evidence.originalFilename}</span>}
+                                              {evidence.contentType && <span>{evidence.contentType}</span>}
+                                              {evidence.retrievalSources.length > 0 && <span>{evidence.retrievalSources.join(' + ')}</span>}
+                                            </div>
+                                            <p className="whitespace-pre-wrap leading-5">{evidence.contentPreview || '该历史回答没有可展示的片段预览。'}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </details>
+                                  )}
+                                  {msg.citationValidation?.status === 'UNKNOWN_REFERENCES' && (
+                                    <p className="mt-2 text-xs text-amber-700 dark:text-amber-400 not-prose">
+                                      部分引用未匹配到本轮来源：{msg.citationValidation.unknownEvidenceIds.map(id => `[${id}]`).join('、')}
+                                    </p>
+                                  )}
                                   {loading && index === messages.length - 1 && (
                                     <span className="inline-block w-0.5 h-5 bg-primary-500 ml-1 animate-pulse" />
                                   )}
@@ -598,7 +729,10 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
                       className="flex-1 px-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder-slate-400"
                       disabled={loading}
                     />
-                    <motion.button
+                    {loading ? <button onClick={handleStopGeneration}
+                      className="px-5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-600 text-sm flex items-center gap-2">
+                      <Square className="w-4 h-4" />停止生成
+                    </button> : <motion.button
                       onClick={handleSubmitQuestion}
                       disabled={!question.trim() || selectedKbIds.size === 0 || loading}
                       className="px-5 py-2.5 bg-primary-500 text-white rounded-xl font-medium hover:bg-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-sm"
@@ -606,7 +740,7 @@ export default function KnowledgeBaseQueryPage({ onBack, onUpload }: KnowledgeBa
                       whileTap={{ scale: loading ? 1 : 0.98 }}
                     >
                       发送
-                    </motion.button>
+                    </motion.button>}
                   </div>
                 </div>
               </>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="getChatClientOrDefault 回退逻辑" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:15.933Z" hostname="LAPTOP-BT5MEUFJ" time="0.025">
+  <properties/>
+  <testcase name="空白 providerId 回退到默认 provider" classname="interview.guide.common.ai.LlmProviderRegistryTest$GetChatClientOrDefault" time="0.009"/>
+  <testcase name="null providerId 回退到默认 provider" classname="interview.guide.common.ai.LlmProviderRegistryTest$GetChatClientOrDefault" time="0.009"/>
+  <testcase name="非 null providerId 委托给 getChatClient" classname="interview.guide.common.ai.LlmProviderRegistryTest$GetChatClientOrDefault" time="0.005"/>
+  <system-out><![CDATA[16:50:15.939 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: dashscope
+16:50:15.939 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: dashscope
+16:50:15.939 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: dashscope, BaseUrl: https://dashscope.aliyuncs.com/compatible-mode/v1, Model: qwen3.5-flash
+16:50:15.949 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: dashscope
+16:50:15.949 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: dashscope
+16:50:15.949 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: dashscope, BaseUrl: https://dashscope.aliyuncs.com/compatible-mode/v1, Model: qwen3.5-flash
+16:50:15.956 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: kimi
+16:50:15.956 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: kimi
+16:50:15.956 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: kimi, BaseUrl: https://api.moonshot.cn/v1, Model: kimi-latest
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

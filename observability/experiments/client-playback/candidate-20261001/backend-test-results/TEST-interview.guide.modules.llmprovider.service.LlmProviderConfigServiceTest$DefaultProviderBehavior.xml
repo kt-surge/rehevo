@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="全局默认 Provider" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.813Z" hostname="LAPTOP-BT5MEUFJ" time="0.028">
+  <properties/>
+  <testcase name="updateDefaultProvider 拒绝未知 provider" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$DefaultProviderBehavior" time="0.012"/>
+  <testcase name="updateDefaultProvider 写入新的默认 provider" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$DefaultProviderBehavior" time="0.016"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

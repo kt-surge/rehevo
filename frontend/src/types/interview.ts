@@ -9,6 +9,40 @@ export interface InterviewSession {
   currentQuestionIndex: number;
   questions: InterviewQuestion[];
   status: 'CREATED' | 'IN_PROGRESS' | 'COMPLETED' | 'EVALUATED';
+  plan: InterviewPlan;
+}
+
+export interface InterviewPlan {
+  skillId: string;
+  difficulty: string;
+  plannedMainQuestions: number;
+  plannedCompetencies: number;
+  requestedFocusCompetencies: number;
+  prioritizedCompetencies: number;
+  retestCoverage: number;
+  competencyCoverage: number;
+  competencies: InterviewCompetencyPlan[];
+  trainingTargets?: InterviewTrainingTarget[];
+}
+
+export interface InterviewTrainingTarget {
+  targetId: string;
+  competency: string;
+  action: string | null;
+  completionCriteria: string | null;
+  reason: string | null;
+  priority: number;
+  questionIndexes: number[];
+}
+
+export interface InterviewCompetencyPlan {
+  competency: string;
+  plannedQuestions: number;
+  questionIndexes: number[];
+  evidenceChecklist: string[];
+  sources: string[];
+  priority: number;
+  priorityReasons: string[];
 }
 
 export interface InterviewQuestion {
@@ -44,6 +78,16 @@ export interface SubmitAnswerResponse {
   nextQuestion: InterviewQuestion | null;
   currentIndex: number;
   totalQuestions: number;
+  liveFollowUpDecision: LiveFollowUpDecision;
+}
+
+export interface LiveFollowUpDecision {
+  action: 'DEEPEN' | 'ADVANCE' | 'NOT_APPLICABLE';
+  followUpQuestionIndex: number | null;
+  matchedKeyPoints: number;
+  totalKeyPoints: number;
+  followUpRelevant: boolean;
+  duplicateQuestion: boolean;
 }
 
 export interface CurrentQuestionResponse {
@@ -55,6 +99,12 @@ export interface CurrentQuestionResponse {
 export interface InterviewReport {
   sessionId: string;
   totalQuestions: number;
+  answeredQuestions: number;
+  scoredQuestions: number;
+  failedQuestions: number;
+  evidenceSupportedQuestions: number;
+  evaluationCoverage: number;
+  evidenceCoverage: number;
   overallScore: number;
   categoryScores: CategoryScore[];
   questionDetails: QuestionEvaluation[];
@@ -68,6 +118,9 @@ export interface CategoryScore {
   category: string;
   score: number;
   questionCount: number;
+  answeredQuestionCount: number;
+  scoredQuestionCount: number;
+  evaluationCoverage: number;
 }
 
 export interface QuestionEvaluation {
@@ -77,6 +130,12 @@ export interface QuestionEvaluation {
   userAnswer: string;
   score: number;
   feedback: string;
+  rubricLevel: number;
+  answerEvidence: string[];
+  missingPoints: string[];
+  factualRisks: string[];
+  nextAction: string;
+  evaluationStatus: 'SCORED' | 'UNANSWERED' | 'EVALUATION_FAILED';
 }
 
 export interface ReferenceAnswer {

@@ -4,27 +4,39 @@ import interview.guide.common.constant.CommonConstants.InterviewDefaults;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
 import interview.guide.common.model.AsyncTaskStatus;
+import interview.guide.infrastructure.redis.InterviewSessionCache;
 import interview.guide.modules.interview.model.HistoricalQuestion;
 import interview.guide.modules.interview.model.InterviewAnswerEntity;
 import interview.guide.modules.interview.model.InterviewQuestionDTO;
 import interview.guide.modules.interview.model.InterviewReportDTO;
+import interview.guide.modules.interview.model.InterviewReportDTO.TrainingTask;
 import interview.guide.modules.interview.model.InterviewSessionEntity;
 import interview.guide.modules.interview.repository.InterviewAnswerRepository;
 import interview.guide.modules.interview.repository.InterviewSessionRepository;
 import interview.guide.modules.resume.model.ResumeEntity;
 import interview.guide.modules.resume.repository.ResumeRepository;
+import interview.guide.modules.voiceinterview.repository.VoiceInterviewEvaluationRepository;
+import interview.guide.modules.voiceinterview.repository.VoiceInterviewSessionRepository;
+import interview.guide.modules.voiceinterview.model.VoiceInterviewEvaluationEntity;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 面试持久化服务
@@ -39,6 +51,9 @@ public class InterviewPersistenceService {
     private final InterviewAnswerRepository answerRepository;
     private final ResumeRepository resumeRepository;
     private final ObjectMapper objectMapper;
+    private final VoiceInterviewSessionRepository voiceSessionRepository;
+    private final VoiceInterviewEvaluationRepository voiceEvaluationRepository;
+    private final InterviewSessionCache sessionCache;
     
     /**
      * 保存新的面试会话（支持可选简历）
@@ -175,9 +190,16 @@ public class InterviewPersistenceService {
 
             InterviewSessionEntity session = sessionOpt.get();
             session.setOverallScore(report.overallScore());
+            session.setAnsweredQuestions(report.answeredQuestions());
+            session.setScoredQuestions(report.scoredQuestions());
+            session.setFailedQuestions(report.failedQuestions());
+            session.setEvidenceSupportedQuestions(report.evidenceSupportedQuestions());
+            session.setEvaluationCoverage(report.evaluationCoverage());
+            session.setEvidenceCoverage(report.evidenceCoverage());
             session.setOverallFeedback(report.overallFeedback());
             session.setStrengthsJson(objectMapper.writeValueAsString(report.strengths()));
             session.setImprovementsJson(objectMapper.writeValueAsString(report.improvements()));
+            session.setTrainingTasksJson(objectMapper.writeValueAsString(report.trainingTasks()));
             session.setReferenceAnswersJson(objectMapper.writeValueAsString(report.referenceAnswers()));
             session.setStatus(InterviewSessionEntity.SessionStatus.EVALUATED);
             session.setCompletedAt(LocalDateTime.now());
@@ -221,6 +243,12 @@ public class InterviewPersistenceService {
                 // 更新评分和反馈
                 answer.setScore(eval.score());
                 answer.setFeedback(eval.feedback());
+                answer.setEvaluationStatus(eval.evaluationStatus());
+                answer.setRubricLevel(eval.rubricLevel());
+                answer.setAnswerEvidenceJson(objectMapper.writeValueAsString(eval.answerEvidence()));
+                answer.setMissingPointsJson(objectMapper.writeValueAsString(eval.missingPoints()));
+                answer.setFactualRisksJson(objectMapper.writeValueAsString(eval.factualRisks()));
+                answer.setNextAction(eval.nextAction());
 
                 // 设置参考答案和关键点
                 InterviewReportDTO.ReferenceAnswer refAns = refAnswerMap.get(eval.questionIndex());
@@ -273,7 +301,9 @@ public class InterviewPersistenceService {
     public void deleteSessionsByResumeId(Long resumeId) {
         List<InterviewSessionEntity> sessions = sessionRepository.findByResumeIdOrderByCreatedAtDesc(resumeId);
         if (!sessions.isEmpty()) {
+            List<String> sessionIds = sessions.stream().map(InterviewSessionEntity::getSessionId).toList();
             sessionRepository.deleteAll(sessions);
+            invalidateSessionCachesAfterCommit(sessionIds);
             log.info("已删除 {} 个面试会话（包含所有答案）", sessions.size());
         }
     }
@@ -288,11 +318,26 @@ public class InterviewPersistenceService {
         Optional<InterviewSessionEntity> sessionOpt = sessionRepository.findBySessionId(sessionId);
         if (sessionOpt.isPresent()) {
             sessionRepository.delete(sessionOpt.get());
+            invalidateSessionCachesAfterCommit(List.of(sessionId));
             log.info("已删除面试会话: sessionId={}", sessionId);
         } else {
             throw new BusinessException(ErrorCode.INTERVIEW_SESSION_NOT_FOUND);
         }
     }
+
+  private void invalidateSessionCachesAfterCommit(List<String> sessionIds) {
+    Runnable invalidate = () -> sessionIds.forEach(sessionCache::deleteSession);
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+      invalidate.run();
+      return;
+    }
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override
+      public void afterCommit() {
+        invalidate.run();
+      }
+    });
+  }
     
     /**
      * 查找未完成的面试会话（CREATED或IN_PROGRESS状态）
@@ -355,4 +400,60 @@ public class InterviewPersistenceService {
 
         return result;
     }
+
+    /**
+     * 读取同一候选人（或通用 Skill）的最近训练任务，供下一场 PREP 计划排序。
+     * 历史 JSON 异常只跳过该场，不能阻断新会话创建。
+     */
+  public List<TrainingTask> getRecentTrainingTasks(String skillId, Long resumeId) {
+    List<InterviewSessionEntity> textSessions = resumeId != null
+        ? sessionRepository.findTop10ByResumeIdAndSkillIdAndStatusOrderByCreatedAtDesc(
+            resumeId, skillId, InterviewSessionEntity.SessionStatus.EVALUATED)
+        : sessionRepository.findTop10ByResumeIsNullAndSkillIdAndStatusOrderByCreatedAtDesc(
+            skillId, InterviewSessionEntity.SessionStatus.EVALUATED);
+    List<TrainingHistory> histories = new ArrayList<>();
+    textSessions.forEach(session -> histories.add(new TrainingHistory("text",
+        session.getSessionId(), session.getCreatedAt(), session.getTrainingTasksJson())));
+
+    var voiceSessions = voiceSessionRepository
+        .findTop10BySkillIdAndResumeIdAndEvaluateStatusOrderByCreatedAtDesc(
+            skillId, resumeId, AsyncTaskStatus.COMPLETED);
+    if (!voiceSessions.isEmpty()) {
+      List<Long> ids = voiceSessions.stream().map(session -> session.getId()).toList();
+      Map<Long, VoiceInterviewEvaluationEntity> evaluations = voiceEvaluationRepository
+          .findBySessionIdIn(ids).stream().collect(Collectors.toMap(
+              VoiceInterviewEvaluationEntity::getSessionId, evaluation -> evaluation));
+      voiceSessions.forEach(session -> {
+        var evaluation = evaluations.get(session.getId());
+        if (evaluation != null) {
+          histories.add(new TrainingHistory("voice", String.valueOf(session.getId()),
+              session.getCreatedAt(), evaluation.getTrainingTasksJson()));
+        }
+      });
+    }
+    return histories.stream()
+        .sorted(Comparator.comparing(TrainingHistory::createdAt,
+            Comparator.nullsLast(Comparator.reverseOrder())))
+        .flatMap(this::parseTrainingTasks)
+        .filter(task -> task != null && task.competency() != null && !task.competency().isBlank())
+        .limit(20)
+        .toList();
+  }
+
+  private Stream<TrainingTask> parseTrainingTasks(TrainingHistory history) {
+    if (history.tasksJson() == null || history.tasksJson().isBlank()) {
+      return Stream.empty();
+    }
+    try {
+      List<TrainingTask> tasks = objectMapper.readValue(history.tasksJson(), new TypeReference<>() {});
+      return tasks == null ? Stream.empty() : tasks.stream();
+    } catch (Exception e) {
+      log.warn("解析历史训练任务失败，跳过该会话: channel={}, sessionId={}",
+          history.channel(), history.sessionId(), e);
+      return Stream.empty();
+    }
+  }
+
+  private record TrainingHistory(
+      String channel, String sessionId, LocalDateTime createdAt, String tasksJson) {}
 }

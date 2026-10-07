@@ -61,6 +61,18 @@ public class InterviewSessionEntity {
     
     // 总分 (0-100)
     private Integer overallScore;
+
+    private Integer answeredQuestions;
+
+    private Integer scoredQuestions;
+
+    private Integer failedQuestions;
+
+    private Integer evidenceSupportedQuestions;
+
+    private Double evaluationCoverage;
+
+    private Double evidenceCoverage;
     
     // 总体评价
     @Column(columnDefinition = "TEXT")
@@ -73,6 +85,10 @@ public class InterviewSessionEntity {
     // 改进建议 (JSON)
     @Column(columnDefinition = "TEXT")
     private String improvementsJson;
+
+    // 下一轮训练任务 (JSON)
+    @Column(columnDefinition = "TEXT")
+    private String trainingTasksJson;
     
     // 参考答案 (JSON)
     @Column(columnDefinition = "TEXT")
@@ -182,6 +198,54 @@ public class InterviewSessionEntity {
     public void setOverallScore(Integer overallScore) {
         this.overallScore = overallScore;
     }
+
+    public Integer getAnsweredQuestions() {
+        return answeredQuestions;
+    }
+
+    public void setAnsweredQuestions(Integer answeredQuestions) {
+        this.answeredQuestions = answeredQuestions;
+    }
+
+    public Integer getScoredQuestions() {
+        return scoredQuestions;
+    }
+
+    public void setScoredQuestions(Integer scoredQuestions) {
+        this.scoredQuestions = scoredQuestions;
+    }
+
+    public Integer getFailedQuestions() {
+        return failedQuestions;
+    }
+
+    public void setFailedQuestions(Integer failedQuestions) {
+        this.failedQuestions = failedQuestions;
+    }
+
+    public Integer getEvidenceSupportedQuestions() {
+        return evidenceSupportedQuestions;
+    }
+
+    public void setEvidenceSupportedQuestions(Integer evidenceSupportedQuestions) {
+        this.evidenceSupportedQuestions = evidenceSupportedQuestions;
+    }
+
+    public Double getEvaluationCoverage() {
+        return evaluationCoverage;
+    }
+
+    public void setEvaluationCoverage(Double evaluationCoverage) {
+        this.evaluationCoverage = evaluationCoverage;
+    }
+
+    public Double getEvidenceCoverage() {
+        return evidenceCoverage;
+    }
+
+    public void setEvidenceCoverage(Double evidenceCoverage) {
+        this.evidenceCoverage = evidenceCoverage;
+    }
     
     public String getOverallFeedback() {
         return overallFeedback;
@@ -205,6 +269,14 @@ public class InterviewSessionEntity {
     
     public void setImprovementsJson(String improvementsJson) {
         this.improvementsJson = improvementsJson;
+    }
+
+    public String getTrainingTasksJson() {
+        return trainingTasksJson;
+    }
+
+    public void setTrainingTasksJson(String trainingTasksJson) {
+        this.trainingTasksJson = trainingTasksJson;
     }
     
     public String getReferenceAnswersJson() {

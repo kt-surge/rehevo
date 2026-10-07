@@ -1,5 +1,6 @@
 import { request } from './request';
 import { streamSse } from './stream';
+import type { CitationValidationReport } from '../types/ragCitation';
 
 // 向量化状态
 export type VectorStatus = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
@@ -57,9 +58,29 @@ export interface QueryResponse {
   knowledgeBaseName: string;
   retrievalQuery: string | null;
   evidence: RetrievalEvidence[];
+  evidenceAssessment: EvidenceAssessment | null;
+  routingDecision: RagRoutingDecision | null;
+  citationValidation?: CitationValidationReport | null;
+}
+
+/** 默认观察模式下仅展示或记录建议，不改变本次检索和回答。 */
+export interface RagRoutingDecision {
+  action: 'RETRIEVE' | 'CLARIFY' | 'ABSTAIN';
+  reason: 'NORMAL_RETRIEVAL' | 'CONTEXT_REFERENCE_WITHOUT_HISTORY' | 'NO_RETRIEVAL_EVIDENCE' | 'INSUFFICIENT_EVIDENCE';
+  mode: 'OFF' | 'OBSERVE';
+}
+
+/** 证据门初期为观察模式，前端不得将其当作已验证的最终拒答。 */
+export interface EvidenceAssessment {
+  sufficient: boolean;
+  reason: 'NO_CANDIDATE' | 'UNSUPPORTED_NUMERIC_CONSTRAINT' | 'CANDIDATE_EVIDENCE';
+  candidateCount: number;
+  numericConstraintDetected: boolean;
+  numericEvidencePresent: boolean;
 }
 
 export interface RetrievalEvidence {
+  evidenceId?: string | null;
   vectorDocumentId: string;
   knowledgeBaseId: number | null;
   documentSha256: string | null;
@@ -72,6 +93,8 @@ export interface RetrievalEvidence {
   finalRank: number | null;
   retrievalSources: string[];
   contentPreview: string | null;
+  originalFilename: string | null;
+  contentType: string | null;
 }
 
 export const knowledgeBaseApi = {

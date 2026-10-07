@@ -1,0 +1,91 @@
+{
+  "evidenceType": "local_regression_and_controlled_browser",
+  "backendFreshTestCommand": "gradlew.bat :app:test --no-daemon --rerun-tasks",
+  "backend": {
+    "tests": 288,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": 63
+  },
+  "nodeTelemetryUnitTests": 8,
+  "nodeTelemetryUnitFailures": 0,
+  "frontendProductionBuild": "tsc && vite build: passed, 2026-10-01",
+  "browser": {
+    "fixtureLogSha256": "74f5f881d4da6ff7bb52dada69f692172fd52c6cee2845f390dacfdf2c28178e",
+    "actualSubmitCount": 7,
+    "scenarioCounts": {
+      "pcm": 4,
+      "html": 1,
+      "cancel": 1,
+      "failure": 1
+    },
+    "reportCount": 5,
+    "reports": [
+      {
+        "clientRequestId": "27a7611e-77a6-4698-8125-2f1737644963",
+        "turnId": "fixture-turn-1",
+        "playbackMode": "scheduled_pcm",
+        "submitToAudioReceivedMs": 173.5,
+        "submitToPlaybackStartMs": 474.2999999523163
+      },
+      {
+        "clientRequestId": "89c61270-0857-4e04-a676-1240cb58c896",
+        "turnId": "fixture-turn-2",
+        "playbackMode": "html_playing",
+        "submitToAudioReceivedMs": 158.39999997615814,
+        "submitToPlaybackStartMs": 236.69999992847443
+      },
+      {
+        "clientRequestId": "7c934201-700d-4283-a1aa-febaae9d1bc6",
+        "turnId": "fixture-turn-5",
+        "playbackMode": "scheduled_pcm",
+        "submitToAudioReceivedMs": 170.69999992847443,
+        "submitToPlaybackStartMs": 170.89999997615814
+      },
+      {
+        "clientRequestId": "4ecdf1d6-5f95-4e52-927c-746e408db8a4",
+        "turnId": "fixture-turn-6",
+        "playbackMode": "scheduled_pcm",
+        "submitToAudioReceivedMs": 165.60000002384186,
+        "submitToPlaybackStartMs": 489.60000002384186
+      },
+      {
+        "clientRequestId": "3c9ebdfe-20bd-453e-ad50-3d0bcfe5ab84",
+        "turnId": "fixture-turn-7",
+        "playbackMode": "scheduled_pcm",
+        "submitToAudioReceivedMs": 173.20000004768372,
+        "submitToPlaybackStartMs": 174
+      }
+    ],
+    "duplicateTurnReports": 0,
+    "cancelledOrFailedTurnReports": 0,
+    "domAssertions": {
+      "lateCancelledTextVisible": false,
+      "lateFailureTextVisible": false,
+      "canSubmitAfterFailure": true
+    },
+    "screenshot": "runs/browser-latest.png",
+    "fixtureLogPath": "frozen-browser-protocol.jsonl",
+    "captureBoundary": "Before browser cleanup; closure events remain in the complete run log"
+  },
+  "sourceSha256": {
+    "app/src/main/java/interview/guide/common/metrics/AppMetricNames.java": "2387453d30acf799f53e5473219171bf92af423084b8e259f1cb7f22d76c983e",
+    "app/src/main/java/interview/guide/common/metrics/ApplicationMetrics.java": "af09b8a26f32b0c647818b5349513f8a04c0265b6d7233148f0c185bf688d015",
+    "app/src/main/java/interview/guide/modules/voiceinterview/handler/VoiceInterviewWebSocketHandler.java": "3c522e812df13e438668dc1323b2c6dbc04a967ed4f73a752fbaaa6009d44a65",
+    "app/src/main/java/interview/guide/modules/voiceinterview/dto/VoiceClientPlaybackReport.java": "5bc584ab89338344f49e30d0fdcae08315760c41f7b11ed744c0004a9db86120",
+    "app/src/main/resources/application.yml": "8647fcb3d947a813b4e5d6880b13f7d3727fcfad61634a8c006ec03b08b4cb99",
+    "frontend/src/pages/VoiceInterviewPage.tsx": "e724edf455a0232a402fc366f83276b4bad5f4e6e5d1793944354a88a246e4c1",
+    "frontend/src/api/voiceInterview.ts": "5e71e5593cd2bedb3227a5626d74751a2ab0587a8e73ddb085453900db6a2300",
+    "frontend/src/types/voiceTelemetry.ts": "a5f3e897668ffd65138a5124a12bdd478256d2587ce90fd469026e69fc6558ba",
+    "frontend/src/utils/voiceTurnTelemetry.ts": "4e240e572f2268f19a02df3a79943e389576a7cee1765a112b3a9ccecb669a2b",
+    "METRICS_CONTRACT.md": "aee12c3347214bd4c50a556131cd5a26a6ab6d9732b2c380c2493907dd444369",
+    "observability/grafana/dashboards/voice-experience.json": "5b2514d11d38c7ef264dce92df4f458b7612c3f2888a3dcb8cb615a0edd9ab42"
+  },
+  "limitations": [
+    "Controlled tone and protocol, not real ASR/LLM/TTS",
+    "Browser in-app Chromium only; no microphone or physical output verification",
+    "No provider or production latency improvement is inferred",
+    "Node/build/DOM statuses are the executed checks recorded by the agent; XML and protocol log are retained"
+  ]
+}

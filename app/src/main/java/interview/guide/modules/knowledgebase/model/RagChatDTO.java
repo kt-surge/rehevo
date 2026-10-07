@@ -90,6 +90,24 @@ public class RagChatDTO {
         Long id,
         String type,  // "user" | "assistant"
         String content,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        List<RetrievalEvidenceDTO> evidence,
+        CitationValidationReport citationValidation,
+        Boolean completed,
+        RagGenerationState generationState,
+        String generationErrorCode
+    ) {}
+
+    /** 本轮实际供给的检索快照；引用编号存在不代表断言得到支持。 */
+    public record RetrievalEvidenceDTO(
+        Long knowledgeBaseId,
+        String documentSha256,
+        Integer chunkIndex,
+        Integer finalRank,
+        List<String> retrievalSources,
+        String contentPreview,
+        String originalFilename,
+        String contentType,
+        String evidenceId
     ) {}
 }

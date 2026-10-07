@@ -889,6 +889,7 @@ public class LlmProviderConfigService {
         "content", "Reply with OK only."
     )));
     requestBody.put("max_tokens", 1);
+    requestBody.putAll(properties.chatExtraBodyForModel(model));
     return requestBody;
   }
 

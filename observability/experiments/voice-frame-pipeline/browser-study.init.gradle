@@ -1,0 +1,41 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def projectRoot = gradle.rootProject.projectDir
+    def outputClasses = appProject.layout.buildDirectory.dir('voice-browser-study/classes')
+    def baselineClasses = appProject.layout.buildDirectory.dir('voice-browser-study/baseline-question-classes')
+    appProject.tasks.register('compileVoiceQuestionBaseline', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/voice-frame-pipeline/runs/20261005-r6/baseline-question-src')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = baselineClasses
+        options.annotationProcessorPath = appProject.configurations.annotationProcessor
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('compileVoiceBrowserStudy', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/voice-frame-pipeline/VoiceBrowserStudyTtsObserver.java')
+        source new File(projectRoot, 'observability/experiments/tts-streaming/SdkUsageTap.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = outputClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('voiceBrowserStudy', JavaExec) {
+        dependsOn 'compileVoiceBrowserStudy'
+        classpath = appProject.files(outputClasses) + appProject.sourceSets.main.runtimeClasspath
+        if ((appProject.findProperty('voiceStudyQuestionVariant') ?: 'current') == 'baseline-question') {
+            dependsOn 'compileVoiceQuestionBaseline'
+            classpath = appProject.files(baselineClasses) + classpath
+        }
+        mainClass = 'interview.guide.App'
+        workingDir projectRoot
+        def port = appProject.findProperty('voiceStudyPort') ?: '18080'
+        def frames = appProject.findProperty('voiceStudyFrames') ?: 'false'
+        def preload = appProject.findProperty('voiceStudyPreload') ?: 'false'
+        systemProperty 'rehevo.voice.study.output', appProject.findProperty('voiceStudyOutput')
+        args '--spring.profiles.active=voice-browser-study', '--server.address=127.0.0.1',
+            "--server.port=${port}", '--app.voice-interview.opening.warmup-enabled=false',
+            '--app.ai.rag.chunking.mode=TOKEN', '--app.ai.rag.chunking.max-tokens=800',
+            '--app.ai.rag.vector-task.durable-enabled=false', "--app.voice-interview.frame-tts.enabled=${frames}",
+            "--app.voice-interview.skill-preload-enabled=${preload}"
+    }
+}

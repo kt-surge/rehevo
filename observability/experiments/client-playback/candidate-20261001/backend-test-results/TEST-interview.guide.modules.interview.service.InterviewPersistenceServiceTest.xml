@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="面试训练任务历史读取" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:19.690Z" hostname="LAPTOP-BT5MEUFJ" time="0.071">
+  <properties/>
+  <testcase name="按简历和 Skill 读取训练任务，并跳过损坏的历史 JSON" classname="interview.guide.modules.interview.service.InterviewPersistenceServiceTest" time="0.071"/>
+  <system-out><![CDATA[16:50:19.761 [Test worker] WARN interview.guide.modules.interview.service.InterviewPersistenceService -- 解析历史训练任务失败，跳过该会话: Unrecognized token 'not': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')
+ at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); byte offset: #UNKNOWN]
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

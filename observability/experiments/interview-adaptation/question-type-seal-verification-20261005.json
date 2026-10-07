@@ -1,0 +1,21 @@
+{
+  "verifiedAt": "2026-10-05T15:30:03.684237+00:00",
+  "runs": [
+    {
+      "run": "training-target-type-baseline-20261005-r1",
+      "files": 33,
+      "hashMismatches": [],
+      "memberMismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "training-target-type-candidate-20261005-r1",
+      "files": 123,
+      "hashMismatches": [],
+      "memberMismatches": [],
+      "exactSensitiveValuesFound": 0
+    }
+  ],
+  "totalFiles": 156,
+  "method": "independent SHA-256, full long-path membership, exact credential-value scan"
+}

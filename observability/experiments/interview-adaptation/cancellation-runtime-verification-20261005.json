@@ -1,0 +1,132 @@
+{
+  "appMain": true,
+  "health": {
+    "groups": [
+      "liveness",
+      "readiness"
+    ],
+    "status": "UP"
+  },
+  "manifestWorkspaceMatched": true,
+  "previousApp35803Terminal": true,
+  "processId": 43908,
+  "port": 18080,
+  "handle": 26519,
+  "backend13567Terminal": true,
+  "springAi201": true,
+  "normalDiagnostic2557Terminal": true,
+  "sdk4490": true,
+  "observedAt": "2026-10-05T14:21:17.4923626Z",
+  "scope": {
+    "counts": {
+      "documents": 15,
+      "vectors": 123,
+      "voiceSessions": 0,
+      "textSessions": 0,
+      "ragSessions": 0,
+      "ragMessages": 0
+    },
+    "publicVectorSha256": "76d903d460a4f34c5f3fedcc1e31b998cb999a6fb8d2ad6105760c1ed30b495b"
+  },
+  "providerSnapshot": {
+    "capturedAt": "2026-10-05T14:22:53.417032+00:00",
+    "source": "running application DTOs backed by isolated provider DB",
+    "defaultProviders": {
+      "defaultProvider": "dashscope",
+      "defaultEmbeddingProvider": "dashscope"
+    },
+    "providers": [
+      {
+        "id": "lmstudio",
+        "baseUrl": "http://localhost:1234",
+        "model": "qwen2.5-7b-instruct",
+        "embeddingModel": null,
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": false,
+        "temperature": null,
+        "defaultChatProvider": false,
+        "defaultEmbeddingProvider": false,
+        "keyAvailable": true,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      },
+      {
+        "id": "kimi",
+        "baseUrl": "https://api.moonshot.cn/v1",
+        "model": "kimi-latest",
+        "embeddingModel": null,
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": false,
+        "temperature": 1.0,
+        "defaultChatProvider": false,
+        "defaultEmbeddingProvider": false,
+        "keyAvailable": null,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      },
+      {
+        "id": "deepseek",
+        "baseUrl": "https://api.deepseek.com",
+        "model": "deepseek-v4-flash",
+        "embeddingModel": null,
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": false,
+        "temperature": null,
+        "defaultChatProvider": false,
+        "defaultEmbeddingProvider": false,
+        "keyAvailable": null,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      },
+      {
+        "id": "glm",
+        "baseUrl": "https://open.bigmodel.cn/api/coding/paas/v4",
+        "model": "glm-5",
+        "embeddingModel": "embedding-3",
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": true,
+        "temperature": null,
+        "defaultChatProvider": false,
+        "defaultEmbeddingProvider": false,
+        "keyAvailable": null,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      },
+      {
+        "id": "dashscope",
+        "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model": "qwen3.8-flash",
+        "embeddingModel": "qwen3.7-text-embedding",
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": true,
+        "temperature": null,
+        "defaultChatProvider": true,
+        "defaultEmbeddingProvider": true,
+        "keyAvailable": true,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      }
+    ],
+    "voice": {
+      "asr": {
+        "url": "wss://dashscope.aliyuncs.com/api-ws/v1/inference",
+        "model": "qwen-audio-3.0-asr-flash-streaming",
+        "language": "zh",
+        "format": "pcm",
+        "sampleRate": 16000,
+        "enableTurnDetection": true,
+        "turnDetectionType": "server_vad",
+        "turnDetectionThreshold": 0.0,
+        "turnDetectionSilenceDurationMs": 2000,
+        "keyAvailable": true
+      },
+      "tts": {
+        "model": "qwen-audio-3.1-tts-flash",
+        "voice": "longanhuan_v3.1",
+        "format": "pcm",
+        "sampleRate": 24000,
+        "mode": "commit",
+        "languageType": "Chinese",
+        "speechRate": 1.0,
+        "volume": 60,
+        "keyAvailable": true
+      }
+    },
+    "secretValuesRecorded": false
+  }
+}

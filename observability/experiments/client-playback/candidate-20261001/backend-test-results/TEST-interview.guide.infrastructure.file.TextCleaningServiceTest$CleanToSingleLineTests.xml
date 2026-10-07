@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="cleanToSingleLine() 测试" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:19.290Z" hostname="LAPTOP-BT5MEUFJ" time="0.056">
+  <properties/>
+  <testcase name="处理混合换行符" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanToSingleLineTests" time="0.001"/>
+  <testcase name="多行文本转为单行" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanToSingleLineTests" time="0.001"/>
+  <testcase name="压缩多余空格" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanToSingleLineTests" time="0.0"/>
+  <testcase name="[1] input = null" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanToSingleLineTests" time="0.007"/>
+  <testcase name="[2] input = &quot;&quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanToSingleLineTests" time="0.001"/>
+  <testcase name="[3] input = &quot;   &quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanToSingleLineTests" time="0.001"/>
+  <testcase name="[4] input = &quot;\n\n&quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanToSingleLineTests" time="0.001"/>
+  <testcase name="[5] input = &quot;\t&quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanToSingleLineTests" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

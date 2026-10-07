@@ -1,0 +1,42 @@
+{
+  "verifiedAt": "2026-10-05T15:16:13.540223+00:00",
+  "runs": [
+    {
+      "run": "training-target-baseline-20261005-r1",
+      "files": 24,
+      "hashMismatches": [],
+      "memberMismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "training-target-candidate-20261005-r1",
+      "files": 126,
+      "hashMismatches": [],
+      "memberMismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "training-target-candidate-20261005-r2",
+      "files": 126,
+      "hashMismatches": [],
+      "memberMismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "training-target-live-candidate-20261005-r1",
+      "files": 52,
+      "hashMismatches": [],
+      "memberMismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "training-target-live-baseline-20261005-r1",
+      "files": 63,
+      "hashMismatches": [],
+      "memberMismatches": [],
+      "exactSensitiveValuesFound": 0
+    }
+  ],
+  "totalFiles": 391,
+  "method": "independent hashes and os.walk long-path membership"
+}

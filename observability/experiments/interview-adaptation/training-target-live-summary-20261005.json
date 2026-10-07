@@ -1,0 +1,118 @@
+{
+  "summary": {
+    "candidate": {
+      "result": {
+        "notFormalEffectOrLatency": true,
+        "invokerOperations": 1,
+        "requestedTargets": 2,
+        "mainQuestions": 3,
+        "elapsedMs": 33084.6084,
+        "status": "finished",
+        "semanticQualityRequiresReview": true,
+        "arrangedTargets": 2
+      },
+      "usage": {
+        "input": 3687.0,
+        "output": 2027.0,
+        "total": 5714.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operations are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 3,
+        "requestedTargets": 2,
+        "arrangedTargets": 2,
+        "invalidTypes": [
+          {
+            "index": 0,
+            "type": "CORE",
+            "category": "JAVA"
+          },
+          {
+            "index": 2,
+            "type": "CORE",
+            "category": "MYSQL"
+          },
+          {
+            "index": 4,
+            "type": "ALWAYS_ONE",
+            "category": "PROJECT"
+          }
+        ],
+        "unknownOrMultipleTargets": [],
+        "actualProductSessionWrites": 0,
+        "scopeUnchanged": true,
+        "semanticQualityGate": "HOLD",
+        "populationEffectClaim": false
+      }
+    },
+    "baseline": {
+      "result": {
+        "semanticQualityRequiresReview": true,
+        "status": "finished",
+        "elapsedMs": 32332.0952,
+        "mainQuestions": 3,
+        "requestedTargets": 2,
+        "invokerOperations": 1,
+        "notFormalEffectOrLatency": true,
+        "arrangedTargets": 0
+      },
+      "usage": {
+        "input": 3279.0,
+        "output": 1767.0,
+        "total": 5046.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operations are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 3,
+        "requestedTargets": 2,
+        "arrangedTargets": 0,
+        "invalidTypes": [
+          {
+            "index": 0,
+            "type": "CORE",
+            "category": "JAVA"
+          },
+          {
+            "index": 2,
+            "type": "CORE",
+            "category": "MYSQL"
+          },
+          {
+            "index": 4,
+            "type": "ALWAYS_ONE",
+            "category": "PROJECT"
+          }
+        ],
+        "unknownOrMultipleTargets": [],
+        "actualProductSessionWrites": 0,
+        "scopeUnchanged": true,
+        "semanticQualityGate": "HOLD",
+        "populationEffectClaim": false
+      }
+    }
+  },
+  "integrity": {
+    "pairs": 1,
+    "fixedOrder": [
+      "candidate",
+      "baseline"
+    ],
+    "alreadyExposed": true,
+    "inputByteIdentical": true,
+    "commonInputBeforeTrainingEqual": true,
+    "referenceAndOutputInstructionsEqual": true,
+    "personaAndGenericModeEqual": true,
+    "normalization": "random data boundary markers and CRLF only",
+    "noFormalQualityOrLatencyClaim": true
+  }
+}

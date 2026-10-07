@@ -47,13 +47,17 @@ export default function InterviewDetailPanel({ interview }: InterviewDetailPanel
       animate={{ opacity: 1, y: 0 }}
     >
       {/* 评分卡片 */}
-        <ScoreCard
+      <ScoreCard
         score={interview.overallScore}
         feedback={interview.overallFeedback}
         scorePercent={scorePercent}
         circumference={circumference}
         strokeDashoffset={strokeDashoffset}
       />
+
+      {interview.answeredQuestions !== undefined && (
+        <EvaluationQualitySummary interview={interview} />
+      )}
 
       {/* 表现优势 */}
       {interview.strengths && interview.strengths.length > 0 && (
@@ -65,6 +69,10 @@ export default function InterviewDetailPanel({ interview }: InterviewDetailPanel
         <ImprovementsSection improvements={interview.improvements} />
       )}
 
+      {interview.trainingTasks && interview.trainingTasks.length > 0 && (
+        <TrainingTasksSection tasks={interview.trainingTasks} />
+      )}
+
       {/* 问答记录详情 */}
         <QuestionsSection
         answers={interview.answers || []}
@@ -72,6 +80,39 @@ export default function InterviewDetailPanel({ interview }: InterviewDetailPanel
         toggleQuestion={toggleQuestion}
       />
     </motion.div>
+  );
+}
+
+function EvaluationQualitySummary({ interview }: { interview: InterviewDetail }) {
+  const percentage = (value?: number) => `${Math.round((value ?? 0) * 100)}%`;
+  return (
+    <div className="grid gap-3 sm:grid-cols-3">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-xs text-slate-500 dark:text-slate-400">有效评分</p>
+        <p className="mt-1 text-xl font-semibold text-slate-800 dark:text-white">
+          {interview.scoredQuestions ?? 0}/{interview.answeredQuestions ?? 0}
+        </p>
+        {(interview.failedQuestions ?? 0) > 0 && (
+          <p className="mt-1 text-xs text-amber-600 dark:text-amber-400">
+            {interview.failedQuestions} 题评估失败，未计入总分
+          </p>
+        )}
+      </div>
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-xs text-slate-500 dark:text-slate-400">评分覆盖率</p>
+        <p className="mt-1 text-xl font-semibold text-slate-800 dark:text-white">
+          {percentage(interview.evaluationCoverage)}
+        </p>
+        <p className="mt-1 text-xs text-slate-400">成功评分 ÷ 已回答</p>
+      </div>
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
+        <p className="text-xs text-slate-500 dark:text-slate-400">证据覆盖率</p>
+        <p className="mt-1 text-xl font-semibold text-slate-800 dark:text-white">
+          {percentage(interview.evidenceCoverage)}
+        </p>
+        <p className="mt-1 text-xs text-slate-400">有原文证据 ÷ 成功评分</p>
+      </div>
+    </div>
   );
 }
 
@@ -196,6 +237,37 @@ function ImprovementsSection({ improvements }: { improvements: string[] }) {
   );
 }
 
+function TrainingTasksSection({ tasks }: { tasks: NonNullable<InterviewDetail['trainingTasks']> }) {
+  return (
+    <motion.div
+      className="rounded-2xl border border-primary-100 bg-primary-50/50 p-6 dark:border-primary-900/40 dark:bg-primary-950/20"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.25 }}
+    >
+      <h4 className="mb-4 font-semibold text-primary-700 dark:text-primary-300">下一轮训练任务</h4>
+      <div className="space-y-3">
+        {[...tasks].sort((left, right) => right.priority - left.priority).map(task => (
+          <div key={`${task.competency}-${task.priority}`} className="rounded-xl bg-white/80 p-4 dark:bg-slate-900/70">
+            <div className="flex items-center gap-2">
+              <span className="rounded-full bg-primary-100 px-2 py-0.5 text-xs font-semibold text-primary-700 dark:bg-primary-900/40 dark:text-primary-200">
+                P{task.priority}
+              </span>
+              <span className="font-medium text-slate-800 dark:text-white">{task.competency}</span>
+              {task.questionIndexes?.length > 0 && (
+                <span className="text-xs text-slate-500">关联题目：{task.questionIndexes.map(index => index + 1).join('、')}</span>
+              )}
+            </div>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">原因：{task.reason}</p>
+            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">行动：{task.action}</p>
+            <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">完成标准：{task.completionCriteria}</p>
+          </div>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
 // 问答部分组件
 function QuestionsSection({
   answers,
@@ -263,8 +335,16 @@ function QuestionCard({
               className="px-3 py-1 bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400 text-xs font-medium rounded-full">
             {answer.category || '综合'}
           </span>
-          <span className={`font-semibold ${getScoreColor(answer.score, [80, 60])}`}>
-            得分: {answer.score}
+          <span className={`font-semibold ${answer.evaluationStatus === 'EVALUATION_FAILED'
+            ? 'text-amber-500'
+            : answer.evaluationStatus === 'UNANSWERED'
+              ? 'text-slate-400'
+              : getScoreColor(answer.score, [80, 60])}`}>
+            {answer.evaluationStatus === 'EVALUATION_FAILED'
+              ? '评估失败'
+              : answer.evaluationStatus === 'UNANSWERED'
+                ? '未回答'
+                : `得分: ${answer.score}`}
           </span>
         </div>
           <motion.svg
@@ -322,6 +402,55 @@ function QuestionCard({
                     AI 深度评价
                   </p>
                   <p className="text-slate-700 dark:text-slate-300 leading-relaxed pl-6">{answer.feedback}</p>
+                </div>
+              )}
+
+              {answer.evaluationStatus === 'SCORED' && answer.rubricLevel !== undefined && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="font-medium text-slate-600 dark:text-slate-400">Rubric 等级</span>
+                  <span className="rounded-full bg-primary-50 px-2.5 py-1 font-semibold text-primary-600 dark:bg-primary-900/30 dark:text-primary-300">
+                    Level {answer.rubricLevel}
+                  </span>
+                </div>
+              )}
+
+              {answer.answerEvidence?.length > 0 && (
+                <div className="rounded-xl border border-emerald-100 bg-emerald-50/70 p-4 dark:border-emerald-900/40 dark:bg-emerald-950/20">
+                  <p className="mb-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">回答证据</p>
+                  <ul className="space-y-1 text-sm text-slate-700 dark:text-slate-300">
+                    {answer.answerEvidence.map((item: string, evidenceIndex: number) => (
+                      <li key={evidenceIndex}>“{item}”</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {answer.missingPoints?.length > 0 && (
+                <div className="rounded-xl border border-amber-100 bg-amber-50/70 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
+                  <p className="mb-2 text-sm font-medium text-amber-700 dark:text-amber-300">尚缺关键点</p>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700 dark:text-slate-300">
+                    {answer.missingPoints.map((item: string, missingIndex: number) => (
+                      <li key={missingIndex}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {answer.factualRisks?.length > 0 && (
+                <div className="rounded-xl border border-red-100 bg-red-50/70 p-4 dark:border-red-900/40 dark:bg-red-950/20">
+                  <p className="mb-2 text-sm font-medium text-red-700 dark:text-red-300">事实风险</p>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-slate-700 dark:text-slate-300">
+                    {answer.factualRisks.map((item: string, riskIndex: number) => (
+                      <li key={riskIndex}>{item}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {answer.nextAction && (
+                <div className="rounded-xl border border-primary-100 bg-primary-50/60 p-4 dark:border-primary-900/40 dark:bg-primary-950/20">
+                  <p className="mb-1 text-sm font-medium text-primary-700 dark:text-primary-300">下一步训练</p>
+                  <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300">{answer.nextAction}</p>
                 </div>
               )}
 

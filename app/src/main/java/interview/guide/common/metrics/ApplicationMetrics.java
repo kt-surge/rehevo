@@ -77,6 +77,96 @@ public class ApplicationMetrics {
     record(AppMetricNames.RAG_ANSWER, tags, elapsedNanos, TimeUnit.NANOSECONDS);
   }
 
+  public void recordRagEvidenceGate(Outcome outcome) {
+    increment(AppMetricNames.RAG_EVIDENCE_GATE, statusTags(outcome));
+  }
+
+  /** 仅记录固定路由动作，禁止把问题内容或会话标识写入指标标签。 */
+  public void recordRagRouting(String action) {
+    String normalized = switch (action) {
+      case "retrieve", "clarify", "abstain" -> action;
+      default -> "invalid";
+    };
+    increment(AppMetricNames.RAG_ROUTING, Tags.of(AppMetricNames.TAG_STATUS, normalized));
+  }
+
+  public void recordInterviewEvaluation(
+      int answered, int scored, int failed, int evidenceSupported,
+      double coverage, double evidenceCoverage) {
+    String status = answered == 0 ? "empty" : failed == 0 ? "complete" : "partial";
+    Tags tags = Tags.of(AppMetricNames.TAG_STATUS, status);
+    increment(AppMetricNames.INTERVIEW_EVALUATION_REPORTS, tags);
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_ANSWERED, Math.max(0, answered));
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_SCORED, Math.max(0, scored));
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_FAILED, Math.max(0, failed));
+    incrementBy(
+        AppMetricNames.INTERVIEW_EVALUATION_EVIDENCE_SUPPORTED,
+        Math.max(0, evidenceSupported));
+    if (meterRegistry != null) {
+      meterRegistry.summary(AppMetricNames.INTERVIEW_EVALUATION_COVERAGE, tags)
+          .record(Math.max(0.0, Math.min(1.0, coverage)));
+      meterRegistry.summary(AppMetricNames.INTERVIEW_EVALUATION_EVIDENCE_COVERAGE, tags)
+          .record(Math.max(0.0, Math.min(1.0, evidenceCoverage)));
+    }
+  }
+
+  public void recordInterviewEvaluationItemRetry(Outcome outcome) {
+    increment(AppMetricNames.INTERVIEW_EVALUATION_ITEM_RETRY, statusTags(outcome));
+  }
+
+  public void recordInterviewEvaluationBatch(long elapsedNanos, Outcome outcome) {
+    Tags tags = statusTags(outcome);
+    increment(AppMetricNames.INTERVIEW_EVALUATION_BATCH_TOTAL, tags);
+    record(AppMetricNames.INTERVIEW_EVALUATION_BATCH, tags, elapsedNanos, TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * 只记录低基数的模型汇总任务归一化数量；不记录能力点、题号或会话 ID，避免把用户数据带入标签。
+   */
+  public void recordInterviewModelTrainingTaskNormalization(int rawTasks, int normalizedTasks) {
+    Tags tags = Tags.of(AppMetricNames.TAG_SOURCE, "model_summary");
+    int safeRaw = Math.max(0, rawTasks);
+    int safeNormalized = Math.max(0, normalizedTasks);
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_TRAINING_TASKS_RAW, safeRaw, tags);
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_TRAINING_TASKS_NORMALIZED, safeNormalized, tags);
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_TRAINING_TASK_DUPLICATES_COLLAPSED,
+        Math.max(0, safeRaw - safeNormalized), tags);
+  }
+
+  public void recordInterviewLiveFollowUp(String action, boolean relevant, boolean duplicate) {
+    increment(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP,
+        Tags.of(AppMetricNames.TAG_STATUS, action));
+    if (meterRegistry != null && !"not_applicable".equals(action)) {
+      meterRegistry.summary(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP_RELEVANCE)
+          .record(relevant ? 1.0 : 0.0);
+      if (duplicate) {
+        increment(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP_DUPLICATE,
+            statusTags(Outcome.FAILURE));
+      }
+    }
+  }
+
+  public void recordInterviewPlan(int mainQuestions, int competencies, int requestedFocusCompetencies,
+                                  int prioritizedCompetencies, double retestCoverage, double competencyCoverage) {
+    String status = mainQuestions == 0 ? "empty" : competencyCoverage >= 1.0 ? "complete" : "partial";
+    Tags tags = Tags.of(AppMetricNames.TAG_STATUS, status);
+    increment(AppMetricNames.INTERVIEW_PLAN_TOTAL, tags);
+    if (meterRegistry != null) {
+      meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_COMPETENCY_COVERAGE, tags)
+          .record(Math.max(0.0, Math.min(1.0, competencyCoverage)));
+      meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_COMPETENCIES, tags)
+          .record(Math.max(0, competencies));
+      meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_HISTORY_FOCUS_COMPETENCIES, tags)
+          .record(Math.max(0, requestedFocusCompetencies));
+      meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_PRIORITIZED_COMPETENCIES, tags)
+          .record(Math.max(0, prioritizedCompetencies));
+      if (requestedFocusCompetencies > 0) {
+        meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_RETEST_COVERAGE, tags)
+            .record(Math.max(0.0, Math.min(1.0, retestCoverage)));
+      }
+    }
+  }
+
   public void recordStreamEnqueued(String streamKey, Outcome outcome) {
     increment(AppMetricNames.ASYNC_STREAM_ENQUEUED, streamTags(streamKey).and(AppMetricNames.TAG_STATUS, outcome.value()));
   }
@@ -147,8 +237,52 @@ public class ApplicationMetrics {
     }
   }
 
-  public void recordVoiceCancellation() {
-    increment(AppMetricNames.VOICE_TURN_CANCELLED, statusTags(Outcome.DISCARDED));
+  public void recordVoiceCancellation(VoiceCancellationReason reason) {
+    increment(AppMetricNames.VOICE_TURN_CANCELLED, Tags.of(
+        AppMetricNames.TAG_STATUS, Outcome.DISCARDED.value(),
+        AppMetricNames.TAG_REASON, reason.value()
+    ));
+  }
+
+  public void recordVoiceStaleCallbackDropped() {
+    increment(AppMetricNames.VOICE_TURN_STALE_DROPPED, statusTags(Outcome.DISCARDED));
+  }
+
+  /**
+   * Measures server-side cancel receipt to cancel acknowledgement enqueue time.
+   * Client-visible acknowledgement time needs a controlled WebSocket experiment.
+   */
+  public void recordVoiceCancelAck(long elapsedNanos) {
+    record(AppMetricNames.VOICE_TURN_CANCEL_ACK, statusTags(Outcome.SUCCESS),
+        Math.max(0, elapsedNanos), TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * 浏览器在收到带匹配请求号的取消确认后上报的本地往返耗时。
+   * 这是客户端观测值，不能替代服务端 SLA 或安全审计时间。
+   */
+  public void recordVoiceClientCancelAck(long elapsedMillis) {
+    record(AppMetricNames.VOICE_TURN_CLIENT_CANCEL_ACK, statusTags(Outcome.SUCCESS),
+        Math.max(0, elapsedMillis), TimeUnit.MILLISECONDS);
+  }
+
+  public void recordVoiceClientPlayback(String mode, double receivedMs, double playbackMs) {
+    if (!("scheduled_pcm".equals(mode) || "output_pcm".equals(mode) || "html_playing".equals(mode))
+        || !Double.isFinite(receivedMs) || !Double.isFinite(playbackMs)
+        || receivedMs < 0 || playbackMs < receivedMs || playbackMs > 120_000) {
+      recordVoiceClientPlaybackRejected();
+      return;
+    }
+    Tags tags = statusTags(Outcome.SUCCESS).and(AppMetricNames.TAG_MODE, mode);
+    record(AppMetricNames.VOICE_CLIENT_AUDIO_RECEIVED, tags,
+        Math.round(receivedMs * 1_000_000), TimeUnit.NANOSECONDS);
+    record(AppMetricNames.VOICE_CLIENT_PLAYBACK_START, tags,
+        Math.round(playbackMs * 1_000_000), TimeUnit.NANOSECONDS);
+    increment(AppMetricNames.VOICE_CLIENT_PLAYBACK_REPORTS, statusTags(Outcome.SUCCESS));
+  }
+
+  public void recordVoiceClientPlaybackRejected() {
+    increment(AppMetricNames.VOICE_CLIENT_PLAYBACK_REPORTS, statusTags(Outcome.DISCARDED));
   }
 
   public void recordVoiceError(VoiceErrorStage stage) {
@@ -158,6 +292,16 @@ public class ApplicationMetrics {
   private void increment(String metricName, Tags tags) {
     if (meterRegistry != null) {
       Counter.builder(metricName).tags(tags).register(meterRegistry).increment();
+    }
+  }
+
+  private void incrementBy(String metricName, double amount) {
+    incrementBy(metricName, amount, Tags.empty());
+  }
+
+  private void incrementBy(String metricName, double amount, Tags tags) {
+    if (meterRegistry != null && amount > 0) {
+      Counter.builder(metricName).tags(tags).register(meterRegistry).increment(amount);
     }
   }
 
@@ -190,6 +334,7 @@ public class ApplicationMetrics {
     FAILURE("failure"),
     SKIPPED("skipped"),
     RETRY("retry"),
+    DEFERRED("deferred"),
     RECOVERED("recovered"),
     DISCARDED("discarded");
 
@@ -223,6 +368,7 @@ public class ApplicationMetrics {
     VECTOR("vector"),
     LEXICAL("lexical"),
     FUSION("fusion"),
+    CONTEXT_EXPANSION("context_expansion"),
     RERANK("rerank");
 
     private final String value;
@@ -339,6 +485,21 @@ public class ApplicationMetrics {
     private final String value;
 
     VoiceTurnMode(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum VoiceCancellationReason {
+    USER("user"),
+    DISCONNECT("disconnect");
+
+    private final String value;
+
+    VoiceCancellationReason(String value) {
       this.value = value;
     }
 

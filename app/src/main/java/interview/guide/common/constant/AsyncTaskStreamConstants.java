@@ -75,6 +75,7 @@ public final class AsyncTaskStreamConstants {
      * 知识库ID字段
      */
     public static final String FIELD_KB_ID = "kbId";
+    public static final String FIELD_GENERATION = "generation";
 
     // ========== 简历分析 Stream 配置 ==========
 

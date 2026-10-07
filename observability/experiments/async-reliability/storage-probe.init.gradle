@@ -1,0 +1,10 @@
+gradle.projectsEvaluated {
+  def appProject = gradle.rootProject.project(':app')
+  appProject.tasks.register('dumpOwnedStorageClasspath') {
+    doLast {
+      def output = System.getenv('REHEVO_STORAGE_CLASSPATH_FILE')
+      if (output == null) { throw new GradleException('Owned storage classpath output not configured') }
+      new File(output).text = appProject.sourceSets.main.runtimeClasspath.asPath
+    }
+  }
+}

@@ -44,9 +44,15 @@ public interface InterviewMapper {
      * 注意：keyPoints 需要从 JSON 解析后传入
      */
     @Mapping(target = "keyPoints", source = "keyPoints")
+    @Mapping(target = "answerEvidence", source = "answerEvidence")
+    @Mapping(target = "missingPoints", source = "missingPoints")
+    @Mapping(target = "factualRisks", source = "factualRisks")
     InterviewDetailDTO.AnswerDetailDTO toAnswerDetailDTO(
         InterviewAnswerEntity entity,
-        List<String> keyPoints
+        List<String> keyPoints,
+        List<String> answerEvidence,
+        List<String> missingPoints,
+        List<String> factualRisks
     );
 
     /**
@@ -57,7 +63,8 @@ public interface InterviewMapper {
         Function<InterviewAnswerEntity, List<String>> keyPointsExtractor
     ) {
         return entities.stream()
-            .map(e -> toAnswerDetailDTO(e, keyPointsExtractor.apply(e)))
+            .map(e -> toAnswerDetailDTO(
+                e, keyPointsExtractor.apply(e), List.of(), List.of(), List.of()))
             .toList();
     }
 
@@ -73,6 +80,7 @@ public interface InterviewMapper {
     @Mapping(target = "questions", source = "questions")
     @Mapping(target = "strengths", source = "strengths")
     @Mapping(target = "improvements", source = "improvements")
+    @Mapping(target = "trainingTasks", source = "trainingTasks")
     @Mapping(target = "referenceAnswers", source = "referenceAnswers")
     @Mapping(target = "answers", source = "answers")
     InterviewDetailDTO toDetailDTO(
@@ -80,6 +88,7 @@ public interface InterviewMapper {
         List<Object> questions,
         List<String> strengths,
         List<String> improvements,
+        List<Object> trainingTasks,
         List<Object> referenceAnswers,
         List<InterviewDetailDTO.AnswerDetailDTO> answers
     );

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="会话创建测试" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.740Z" hostname="LAPTOP-BT5MEUFJ" time="0.008">
+  <properties/>
+  <testcase name="创建会话 - 自定义JD文本" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$CreateSessionTests" time="0.004"/>
+  <testcase name="创建会话 - 仅启用技术阶段" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$CreateSessionTests" time="0.001"/>
+  <testcase name="创建会话 - 验证基本流程" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$CreateSessionTests" time="0.002"/>
+  <system-out><![CDATA[16:50:30.745 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Created voice interview session: 3 with template: java-backend, phase: INTRO
+16:50:30.746 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Created voice interview session: 2 with template: java-backend, phase: TECH
+16:50:30.748 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Created voice interview session: 1 with template: java-backend, phase: INTRO
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

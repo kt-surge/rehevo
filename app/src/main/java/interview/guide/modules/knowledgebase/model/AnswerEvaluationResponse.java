@@ -1,6 +1,7 @@
 package interview.guide.modules.knowledgebase.model;
 
 import java.util.List;
+import interview.guide.modules.knowledgebase.service.EvidenceAssessment;
 
 /**
  * 供离线评测器构建 RAGAS SingleTurnSample 的完整回答与上下文。
@@ -12,7 +13,9 @@ public record AnswerEvaluationResponse(
         String question,
         String retrievalQuery,
         String answer,
-        List<RetrievalEvidence> evidence
+        List<RetrievalEvidence> evidence,
+        EvidenceAssessment evidenceAssessment,
+        CitationValidationReport citationValidation
     ) {}
 
     public record RetrievalEvidence(
@@ -27,6 +30,9 @@ public record AnswerEvaluationResponse(
         Double rerankScore,
         Integer finalRank,
         List<String> retrievalSources,
-        String content
+        String content,
+        String originalFilename,
+        String contentType,
+        String evidenceId
     ) {}
 }

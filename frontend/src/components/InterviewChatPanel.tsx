@@ -76,6 +76,36 @@ export default function InterviewChatPanel({
         </div>
       </div>
 
+      {session.plan && (
+        <details className="mb-4 rounded-2xl border border-primary-100 bg-primary-50/60 px-5 py-3 text-sm dark:border-primary-900/50 dark:bg-primary-950/20">
+          <summary className="cursor-pointer font-semibold text-primary-800 dark:text-primary-200">
+            本轮能力计划：覆盖 {session.plan.plannedCompetencies} 个能力点
+            {session.plan.requestedFocusCompetencies > 0
+              ? `，训练目标 ${session.plan.requestedFocusCompetencies} 项，已安排题目 ${session.plan.prioritizedCompetencies} 项（${Math.round(session.plan.retestCoverage * 100)}%）`
+              : ''}
+          </summary>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {session.plan.competencies.map((competency) => (
+              <div key={competency.competency} className="rounded-xl bg-white/80 px-3 py-2 dark:bg-slate-900/70">
+                <p className="font-medium text-slate-800 dark:text-slate-100">
+                  {competency.competency} · {competency.plannedQuestions} 题
+                </p>
+                  {competency.evidenceChecklist.length > 0 && (
+                  <p className="mt-1 line-clamp-2 text-xs text-slate-500 dark:text-slate-400">
+                    关注：{competency.evidenceChecklist.join('、')}
+                  </p>
+                  )}
+                {competency.priorityReasons.length > 0 && (
+                  <p className="mt-1 line-clamp-2 text-xs text-amber-700 dark:text-amber-300">
+                    优先原因：{competency.priorityReasons.join('；')}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
+
       {/* 聊天区域 */}
         <div
             className="flex-1 bg-white dark:bg-slate-900 rounded-[28px] shadow-[0_18px_45px_-32px_rgba(24,34,53,0.45)] overflow-hidden flex flex-col min-h-0 border border-slate-200/80 dark:border-slate-800">

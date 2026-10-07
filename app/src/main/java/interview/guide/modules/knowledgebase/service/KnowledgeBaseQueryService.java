@@ -2,6 +2,7 @@ package interview.guide.modules.knowledgebase.service;
 
 import interview.guide.common.ai.LlmProviderRegistry;
 import interview.guide.common.ai.PromptSecurityConstants;
+import interview.guide.common.config.DocumentChunkingProperties;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
 import interview.guide.common.metrics.ApplicationMetrics;
@@ -10,11 +11,13 @@ import interview.guide.modules.knowledgebase.model.AnswerEvaluationResponse;
 import interview.guide.modules.knowledgebase.model.QueryRequest;
 import interview.guide.modules.knowledgebase.model.QueryResponse;
 import interview.guide.modules.knowledgebase.model.RetrievalEvaluationRequest;
+import interview.guide.modules.knowledgebase.model.RetrievalEvaluationConfigDTO;
 import interview.guide.modules.knowledgebase.model.RetrievalEvaluationResponse;
 import interview.guide.modules.knowledgebase.model.KnowledgeBaseEntity;
 import interview.guide.modules.knowledgebase.repository.KnowledgeBaseRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -22,7 +25,6 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
-import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 
 import java.io.IOException;
@@ -35,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.IntStream;
 
 /**
  * 知识库查询服务
@@ -44,7 +47,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 public class KnowledgeBaseQueryService {
     private static final String NO_RESULT_RESPONSE = "抱歉，在选定的知识库中未检索到相关信息。请换一个更具体的关键词或补充上下文后再试。";
-    private static final int STREAM_PROBE_CHARS = 120;
     private static final int MAX_REWRITE_HISTORY_CHAR = 200;
     private static final int EVIDENCE_PREVIEW_MAX_CHARS = 240;
 
@@ -54,9 +56,15 @@ public class KnowledgeBaseQueryService {
     private final KnowledgeBaseCountService countService;
     private final KnowledgeBaseRepository knowledgeBaseRepository;
     private final ApplicationMetrics applicationMetrics;
+    private final EvidenceSufficiencyService evidenceSufficiencyService;
+    private final RagRoutingDecisionService routingDecisionService;
+    private final KnowledgeBaseQueryProperties queryProperties;
+    private final DocumentChunkingProperties chunkingProperties;
     private final PromptTemplate systemPromptTemplate;
     private final PromptTemplate userPromptTemplate;
     private final PromptTemplate rewritePromptTemplate;
+    private final PromptTemplate citationPromptTemplate;
+    private final boolean citationEnabled;
     private final boolean rewriteEnabled;
     private final int shortQueryLength;
     private final int topkShort;
@@ -73,7 +81,10 @@ public class KnowledgeBaseQueryService {
             KnowledgeBaseCountService countService,
             KnowledgeBaseRepository knowledgeBaseRepository,
             ApplicationMetrics applicationMetrics,
+            EvidenceSufficiencyService evidenceSufficiencyService,
+            RagRoutingDecisionService routingDecisionService,
             KnowledgeBaseQueryProperties queryProperties,
+            DocumentChunkingProperties chunkingProperties,
             ResourceLoader resourceLoader) throws IOException {
         this.llmProviderRegistry = llmProviderRegistry;
         this.retrievalService = retrievalService;
@@ -81,6 +92,10 @@ public class KnowledgeBaseQueryService {
         this.countService = countService;
         this.knowledgeBaseRepository = knowledgeBaseRepository;
         this.applicationMetrics = applicationMetrics;
+        this.evidenceSufficiencyService = evidenceSufficiencyService;
+        this.routingDecisionService = routingDecisionService;
+        this.queryProperties = queryProperties;
+        this.chunkingProperties = chunkingProperties;
         this.systemPromptTemplate = new PromptTemplate(
             resourceLoader.getResource(queryProperties.getSystemPromptPath())
                 .getContentAsString(StandardCharsets.UTF_8)
@@ -93,6 +108,11 @@ public class KnowledgeBaseQueryService {
             resourceLoader.getResource(queryProperties.getRewritePromptPath())
                 .getContentAsString(StandardCharsets.UTF_8)
         );
+        this.citationPromptTemplate = new PromptTemplate(
+            resourceLoader.getResource(queryProperties.getCitation().getPromptPath())
+                .getContentAsString(StandardCharsets.UTF_8)
+        );
+        this.citationEnabled = queryProperties.getCitation().isEnabled();
         this.rewriteEnabled = queryProperties.getRewrite().isEnabled();
         this.shortQueryLength = queryProperties.getSearch().getShortQueryLength();
         this.topkShort = queryProperties.getSearch().getTopkShort();
@@ -104,7 +124,12 @@ public class KnowledgeBaseQueryService {
     }
 
     private ChatClient getChatClient() {
-        return llmProviderRegistry.getDefaultChatClient();
+        return llmProviderRegistry.getChatClientOrDefault(null, LlmProviderRegistry.ToolAccess.NONE);
+    }
+
+    /** 知识问答只依据已检索上下文，不进入全局面试 Skill 工具循环。 */
+    private ChatClient.ChatClientRequestSpec ragPrompt() {
+        return getChatClient().prompt().options(OpenAiChatOptions.builder().toolChoice("none"));
     }
 
     /**
@@ -153,7 +178,7 @@ public class KnowledgeBaseQueryService {
             applicationMetrics.recordRagAnswer(
                 System.nanoTime() - startNanos, ApplicationMetrics.Interaction.SYNC, ApplicationMetrics.Outcome.SKIPPED
             );
-            return new SyncQueryResult(NO_RESULT_RESPONSE, RetrievalResult.empty());
+            return new SyncQueryResult(NO_RESULT_RESPONSE, RetrievalResult.empty(), null, null, List.of());
         }
 
         if (countQuestion) {
@@ -161,25 +186,28 @@ public class KnowledgeBaseQueryService {
         }
 
         QueryContext queryContext = buildQueryContext(question, List.of(), useRewrite);
+        RagRoutingDecision plannedRoutingDecision = routingDecisionService.plan(
+            question, false, queryProperties.getRouting().getMode());
         RetrievalResult retrievalResult = retrieveRelevantDocs(queryContext, knowledgeBaseIds, retrievalMode);
         List<Document> relevantDocs = retrievalResult.documents();
+        EvidenceAssessment evidenceAssessment = assessEvidence(question, relevantDocs);
+        RagRoutingDecision routingDecision = resolveAndRecordRouting(
+            plannedRoutingDecision, hasEffectiveHit(relevantDocs), evidenceAssessment);
 
-        if (!hasEffectiveHit(relevantDocs)) {
+        if (!hasEffectiveHit(relevantDocs) || shouldEnforceAbstention(evidenceAssessment)) {
             applicationMetrics.recordRagAnswer(
                 System.nanoTime() - startNanos, ApplicationMetrics.Interaction.SYNC, ApplicationMetrics.Outcome.SKIPPED
             );
-            return new SyncQueryResult(NO_RESULT_RESPONSE, retrievalResult);
+            return new SyncQueryResult(NO_RESULT_RESPONSE, retrievalResult, evidenceAssessment, routingDecision, List.of());
         }
 
-        String context = relevantDocs.stream()
-                .map(Document::getText)
-                .collect(Collectors.joining("\n\n---\n\n"));
+        RagEvidenceContext context = RagEvidenceContext.from(relevantDocs, citationEnabled);
 
         String systemPrompt = buildSystemPrompt();
-        String userPrompt = buildUserPrompt(context, question);
+        String userPrompt = buildUserPrompt(context.text(), question);
 
         try {
-            String answer = getChatClient().prompt()
+            String answer = ragPrompt()
                     .system(systemPrompt)
                     .user(userPrompt)
                     .call()
@@ -190,7 +218,7 @@ public class KnowledgeBaseQueryService {
             applicationMetrics.recordRagAnswer(
                 System.nanoTime() - startNanos, ApplicationMetrics.Interaction.SYNC, ApplicationMetrics.Outcome.SUCCESS
             );
-            return new SyncQueryResult(answer, retrievalResult);
+            return new SyncQueryResult(answer, retrievalResult, evidenceAssessment, routingDecision, context.evidenceIds());
 
         } catch (Exception e) {
             log.error("知识库问答失败: {}", e.getMessage(), e);
@@ -206,6 +234,7 @@ public class KnowledgeBaseQueryService {
      */
     private String buildSystemPrompt() {
         return systemPromptTemplate.render()
+            + (citationEnabled ? citationPromptTemplate.render() : "")
             + PromptSecurityConstants.ANTI_INJECTION_INSTRUCTION;
     }
 
@@ -237,7 +266,12 @@ public class KnowledgeBaseQueryService {
             primaryKbId,
             kbNamesStr,
             queryResult.retrievalResult().query(),
-            buildEvidence(queryResult.retrievalResult().documents())
+            buildEvidence(queryResult.retrievalResult().documents(),
+                loadEvidenceKnowledgeBases(queryResult.retrievalResult().documents()),
+                queryResult.evidenceIds(), request.question()),
+            queryResult.evidenceAssessment(),
+            queryResult.routingDecision(),
+            RagCitationValidator.check(queryResult.answer(), queryResult.evidenceIds())
         );
     }
 
@@ -248,18 +282,55 @@ public class KnowledgeBaseQueryService {
     public RetrievalEvaluationResponse evaluateRetrieval(RetrievalEvaluationRequest request) {
         List<RetrievalEvaluationResponse.RetrievalEvaluationItem> items = request.queries().stream()
             .map(query -> {
+                long startNanos = System.nanoTime();
                 QueryContext queryContext = buildQueryContext(query.question(), List.of(), request.useRewrite());
                 RetrievalMode mode = request.retrievalMode() == null
                     ? defaultRetrievalMode : request.retrievalMode();
-                RetrievalResult retrievalResult = retrieveRelevantDocs(queryContext, query.knowledgeBaseIds(), mode);
+                RetrievalResult retrievalResult = retrieveRelevantDocs(queryContext, query.knowledgeBaseIds(),
+                    mode, request.contextTokenBudget());
+                EvidenceAssessment evidenceAssessment = assessEvidence(query.question(), retrievalResult.documents());
+                RagRoutingDecision routingDecision = resolveAndRecordRouting(
+                    routingDecisionService.plan(query.question(), false, queryProperties.getRouting().getMode()),
+                    hasEffectiveHit(retrievalResult.documents()),
+                    evidenceAssessment
+                );
+                List<Document> diagnosticDocuments = new ArrayList<>(retrievalResult.documents());
+                diagnosticDocuments.addAll(retrievalResult.trace().candidates());
+                diagnosticDocuments.addAll(retrievalResult.trace().vectorDocuments());
+                diagnosticDocuments.addAll(retrievalResult.trace().lexicalDocuments());
+                retrievalResult.trace().focusedQueries().forEach(focus -> {
+                    diagnosticDocuments.addAll(focus.vectorDocuments());
+                    diagnosticDocuments.addAll(focus.lexicalDocuments());
+                    diagnosticDocuments.addAll(focus.candidates());
+                });
+                Map<Long, KnowledgeBaseEntity> knowledgeBases = loadEvidenceKnowledgeBases(diagnosticDocuments);
                 return new RetrievalEvaluationResponse.RetrievalEvaluationItem(
                     query.question(),
                     retrievalResult.query(),
-                    buildEvidence(retrievalResult.documents())
+                    buildEvidence(retrievalResult.documents(), knowledgeBases),
+                    evidenceAssessment,
+                    routingDecision,
+                    buildEvidence(retrievalResult.trace().candidates(), knowledgeBases),
+                    buildEvidence(retrievalResult.trace().vectorDocuments(), knowledgeBases),
+                    buildEvidence(retrievalResult.trace().lexicalDocuments(), knowledgeBases),
+                    (System.nanoTime() - startNanos) / 1_000_000.0,
+                    retrievalResult.trace().focusedQueries().stream().map(focus ->
+                        new RetrievalEvaluationResponse.FocusedQueryTraceDTO(focus.query(),
+                            buildEvidence(focus.vectorDocuments(), knowledgeBases),
+                            buildEvidence(focus.lexicalDocuments(), knowledgeBases),
+                            buildEvidence(focus.candidates(), knowledgeBases))).toList(),
+                    retrievalResult.trace().vectorSearchCalls(),
+                    retrievalResult.trace().contextTokenBudget(),
+                    retrievalResult.trace().contextTokenEstimate(),
+                    retrievalResult.trace().identifierReservations().stream().map(reservation ->
+                        new RetrievalEvaluationResponse.IdentifierReservationDTO(
+                            reservation.identifier(), reservation.chunkId(),
+                            reservation.detailHeading())).toList()
                 );
             })
             .toList();
-        return new RetrievalEvaluationResponse(items);
+        return new RetrievalEvaluationResponse(items,
+            RetrievalEvaluationConfigDTO.from(queryProperties, chunkingProperties));
     }
 
     /**
@@ -276,7 +347,9 @@ public class KnowledgeBaseQueryService {
                     query.question(),
                     result.retrievalResult().query(),
                     result.answer(),
-                    buildEvaluationEvidence(result.retrievalResult().documents())
+                    buildEvaluationEvidence(result.retrievalResult().documents(), result.evidenceIds()),
+                    result.evidenceAssessment(),
+                    RagCitationValidator.check(result.answer(), result.evidenceIds())
                 );
             })
             .toList();
@@ -303,6 +376,14 @@ public class KnowledgeBaseQueryService {
      * @return 流式响应
      */
     public Flux<String> answerQuestionStream(List<Long> knowledgeBaseIds, String question, List<Message> history) {
+        return answerQuestionStreamWithEvidence(knowledgeBaseIds, question, history).content();
+    }
+
+    /**
+     * 与流式回答同时返回本次实际喂给模型的检索证据，用于将引用快照持久化到会话历史。
+     */
+    public StreamAnswer answerQuestionStreamWithEvidence(List<Long> knowledgeBaseIds, String question,
+                                                          List<Message> history) {
         long startNanos = System.nanoTime();
         log.info("收到知识库流式提问: kbIds={}, question={}, historySize={}", knowledgeBaseIds, question,
                 history != null ? history.size() : 0);
@@ -310,7 +391,7 @@ public class KnowledgeBaseQueryService {
             applicationMetrics.recordRagAnswer(
                 System.nanoTime() - startNanos, ApplicationMetrics.Interaction.STREAM, ApplicationMetrics.Outcome.SKIPPED
             );
-            return Flux.just(NO_RESULT_RESPONSE);
+            return new StreamAnswer(Flux.just(NO_RESULT_RESPONSE), List.of(), null);
         }
 
         try {
@@ -320,29 +401,31 @@ public class KnowledgeBaseQueryService {
             // 2. Query rewrite + 动态参数检索
             List<Message> effectiveHistory = sanitizeHistory(history);
             QueryContext queryContext = buildQueryContext(question, effectiveHistory);
+            RagRoutingDecision plannedRoutingDecision = routingDecisionService.plan(
+                question, !effectiveHistory.isEmpty(), queryProperties.getRouting().getMode());
             List<Document> relevantDocs = retrieveRelevantDocs(
                 queryContext, knowledgeBaseIds, defaultRetrievalMode).documents();
+            EvidenceAssessment evidenceAssessment = assessEvidence(question, relevantDocs);
+            resolveAndRecordRouting(plannedRoutingDecision, hasEffectiveHit(relevantDocs), evidenceAssessment);
 
-            if (!hasEffectiveHit(relevantDocs)) {
+            if (!hasEffectiveHit(relevantDocs) || shouldEnforceAbstention(evidenceAssessment)) {
                 applicationMetrics.recordRagAnswer(
                     System.nanoTime() - startNanos, ApplicationMetrics.Interaction.STREAM, ApplicationMetrics.Outcome.SKIPPED
                 );
-                return Flux.just(NO_RESULT_RESPONSE);
+                return new StreamAnswer(Flux.just(NO_RESULT_RESPONSE), List.of(), evidenceAssessment);
             }
 
             // 3. 构建上下文
-            String context = relevantDocs.stream()
-                    .map(Document::getText)
-                    .collect(Collectors.joining("\n\n---\n\n"));
+            RagEvidenceContext context = RagEvidenceContext.from(relevantDocs, citationEnabled);
 
             log.debug("检索到 {} 个相关文档片段", relevantDocs.size());
 
             // 4. 构建提示词
             String systemPrompt = buildSystemPrompt();
-            String userPrompt = buildUserPrompt(context, question);
+            String userPrompt = buildUserPrompt(context.text(), question);
 
-            // 5. 流式调用（带历史上下文）+ 探测窗口归一化
-            var promptSpec = getChatClient().prompt().system(systemPrompt);
+            // 5. 流式调用（带历史上下文）；保留有依据的部分答案
+            var promptSpec = ragPrompt().system(systemPrompt);
             if (!effectiveHistory.isEmpty()) {
                 promptSpec = promptSpec.messages(effectiveHistory);
             }
@@ -351,8 +434,8 @@ public class KnowledgeBaseQueryService {
                     .stream()
                     .content();
 
-            log.info("开始流式输出知识库回答(探测窗口): kbIds={}", knowledgeBaseIds);
-            return normalizeStreamOutput(responseFlux)
+            log.info("开始流式输出知识库回答: kbIds={}", knowledgeBaseIds);
+            return new StreamAnswer(normalizeStreamOutput(responseFlux)
                 .doOnComplete(() -> {
                     applicationMetrics.recordRagAnswer(
                         System.nanoTime() - startNanos,
@@ -361,23 +444,28 @@ public class KnowledgeBaseQueryService {
                     );
                     log.info("流式输出完成: kbIds={}", knowledgeBaseIds);
                 })
-                .onErrorResume(e -> {
+                .doOnError(e -> {
                     applicationMetrics.recordRagAnswer(
                         System.nanoTime() - startNanos,
                         ApplicationMetrics.Interaction.STREAM,
                         ApplicationMetrics.Outcome.FAILURE
                     );
                     log.error("流式输出失败: kbIds={}, error={}", knowledgeBaseIds, e.getMessage(), e);
-                    return Flux.just("【错误】知识库查询失败：AI服务暂时不可用，请稍后重试。");
-                });
+                }), buildEvidence(relevantDocs, loadEvidenceKnowledgeBases(relevantDocs),
+                    context.evidenceIds(), question), evidenceAssessment);
 
         } catch (Exception e) {
             applicationMetrics.recordRagAnswer(
                 System.nanoTime() - startNanos, ApplicationMetrics.Interaction.STREAM, ApplicationMetrics.Outcome.FAILURE
             );
             log.error("知识库流式问答失败: {}", e.getMessage(), e);
-            return Flux.just("【错误】知识库查询失败：" + e.getMessage());
+            return new StreamAnswer(Flux.error(new BusinessException(ErrorCode.KNOWLEDGE_BASE_QUERY_FAILED,
+                "知识库查询失败，请稍后重试", e)), List.of(), null);
         }
+    }
+
+    public record StreamAnswer(Flux<String> content, List<QueryResponse.RetrievalEvidence> evidence,
+                               EvidenceAssessment evidenceAssessment) {
     }
 
     private QueryContext buildQueryContext(String originalQuestion, List<Message> history) {
@@ -414,44 +502,73 @@ public class KnowledgeBaseQueryService {
 
     private RetrievalResult retrieveRelevantDocs(QueryContext queryContext, List<Long> knowledgeBaseIds,
                                                   RetrievalMode retrievalMode) {
+        return retrieveRelevantDocs(queryContext, knowledgeBaseIds, retrievalMode, null);
+    }
+
+    private RetrievalResult retrieveRelevantDocs(QueryContext queryContext, List<Long> knowledgeBaseIds,
+                                                  RetrievalMode retrievalMode, Integer contextTokenBudget) {
         for (String candidateQuery : queryContext.candidateQueries()) {
             if (candidateQuery.isBlank()) {
                 continue;
             }
-            List<Document> docs = retrievalService.retrieve(
+            HybridRetrievalService.RetrievalTrace trace = retrievalService.retrieveWithTrace(
                 candidateQuery,
                 queryContext.originalQuestion(),
                 knowledgeBaseIds,
                 queryContext.searchParams().topK(),
                 queryContext.searchParams().minScore(),
-                retrievalMode
+                retrievalMode,
+                contextTokenBudget
             );
+            List<Document> docs = trace.documents();
             log.info("检索候选 query='{}'，mode={}，命中 {} 条", candidateQuery, retrievalMode, docs.size());
             if (hasEffectiveHit(docs)) {
-                return new RetrievalResult(candidateQuery, docs);
+                return new RetrievalResult(candidateQuery, docs, trace);
             }
         }
         return RetrievalResult.empty();
     }
 
     private List<QueryResponse.RetrievalEvidence> buildEvidence(List<Document> documents) {
+        return buildEvidence(documents, loadEvidenceKnowledgeBases(documents));
+    }
+
+    private Map<Long, KnowledgeBaseEntity> loadEvidenceKnowledgeBases(List<Document> documents) {
         if (documents == null || documents.isEmpty()) {
-            return List.of();
+            return Map.of();
         }
         Set<Long> knowledgeBaseIds = documents.stream()
             .map(document -> parseLongMetadata(document, "kb_id"))
             .filter(java.util.Objects::nonNull)
             .collect(Collectors.toSet());
-        Map<Long, String> documentHashes = knowledgeBaseRepository.findAllById(knowledgeBaseIds).stream()
-            .collect(Collectors.toMap(KnowledgeBaseEntity::getId, KnowledgeBaseEntity::getFileHash));
+        return knowledgeBaseRepository.findAllById(knowledgeBaseIds).stream()
+            .collect(Collectors.toMap(KnowledgeBaseEntity::getId, entity -> entity));
+    }
 
-        return documents.stream()
-            .map(document -> {
+    private List<QueryResponse.RetrievalEvidence> buildEvidence(List<Document> documents,
+                                                               Map<Long, KnowledgeBaseEntity> knowledgeBases) {
+        return buildEvidence(documents, knowledgeBases, List.of());
+    }
+
+    private List<QueryResponse.RetrievalEvidence> buildEvidence(List<Document> documents,
+            Map<Long, KnowledgeBaseEntity> knowledgeBases, List<String> evidenceIds) {
+        return buildEvidence(documents, knowledgeBases, evidenceIds, null);
+    }
+
+    private List<QueryResponse.RetrievalEvidence> buildEvidence(List<Document> documents,
+            Map<Long, KnowledgeBaseEntity> knowledgeBases, List<String> evidenceIds, String question) {
+        if (documents == null || documents.isEmpty()) {
+            return List.of();
+        }
+        return IntStream.range(0, documents.size())
+            .mapToObj(index -> {
+                Document document = documents.get(index);
                 Long knowledgeBaseId = parseLongMetadata(document, "kb_id");
+                KnowledgeBaseEntity knowledgeBase = knowledgeBaseId == null ? null : knowledgeBases.get(knowledgeBaseId);
                 return new QueryResponse.RetrievalEvidence(
                     document.getId(),
                     knowledgeBaseId,
-                    knowledgeBaseId == null ? null : documentHashes.get(knowledgeBaseId),
+                    knowledgeBase == null ? null : knowledgeBase.getFileHash(),
                     parseIntegerMetadata(document, "chunk_index"),
                     retrievalSimilarityScore(document),
                     parseIntegerMetadata(document, "retrieval_vector_rank"),
@@ -460,13 +577,18 @@ public class KnowledgeBaseQueryService {
                     parseDoubleMetadata(document, "retrieval_rerank_score"),
                     parseIntegerMetadata(document, "retrieval_final_rank"),
                     parseStringListMetadata(document, "retrieval_sources"),
-                    abbreviate(document.getText(), EVIDENCE_PREVIEW_MAX_CHARS)
+                    evidenceIds.isEmpty() ? abbreviate(document.getText(), EVIDENCE_PREVIEW_MAX_CHARS)
+                        : RagEvidencePreview.from(document.getText(), question, EVIDENCE_PREVIEW_MAX_CHARS),
+                    knowledgeBase == null ? null : knowledgeBase.getOriginalFilename(),
+                    knowledgeBase == null ? null : knowledgeBase.getContentType(),
+                    evidenceIds.isEmpty() ? null : evidenceIds.get(index)
                 );
             })
             .toList();
     }
 
-    private List<AnswerEvaluationResponse.RetrievalEvidence> buildEvaluationEvidence(List<Document> documents) {
+    private List<AnswerEvaluationResponse.RetrievalEvidence> buildEvaluationEvidence(
+            List<Document> documents, List<String> evidenceIds) {
         if (documents == null || documents.isEmpty()) {
             return List.of();
         }
@@ -474,16 +596,18 @@ public class KnowledgeBaseQueryService {
             .map(document -> parseLongMetadata(document, "kb_id"))
             .filter(java.util.Objects::nonNull)
             .collect(Collectors.toSet());
-        Map<Long, String> documentHashes = knowledgeBaseRepository.findAllById(knowledgeBaseIds).stream()
-            .collect(Collectors.toMap(KnowledgeBaseEntity::getId, KnowledgeBaseEntity::getFileHash));
+        Map<Long, KnowledgeBaseEntity> knowledgeBases = knowledgeBaseRepository.findAllById(knowledgeBaseIds).stream()
+            .collect(Collectors.toMap(KnowledgeBaseEntity::getId, entity -> entity));
 
-        return documents.stream()
-            .map(document -> {
+        return IntStream.range(0, documents.size())
+            .mapToObj(index -> {
+                Document document = documents.get(index);
                 Long knowledgeBaseId = parseLongMetadata(document, "kb_id");
+                KnowledgeBaseEntity knowledgeBase = knowledgeBaseId == null ? null : knowledgeBases.get(knowledgeBaseId);
                 return new AnswerEvaluationResponse.RetrievalEvidence(
                     document.getId(),
                     knowledgeBaseId,
-                    knowledgeBaseId == null ? null : documentHashes.get(knowledgeBaseId),
+                    knowledgeBase == null ? null : knowledgeBase.getFileHash(),
                     parseIntegerMetadata(document, "chunk_index"),
                     retrievalSimilarityScore(document),
                     parseIntegerMetadata(document, "retrieval_vector_rank"),
@@ -492,7 +616,10 @@ public class KnowledgeBaseQueryService {
                     parseDoubleMetadata(document, "retrieval_rerank_score"),
                     parseIntegerMetadata(document, "retrieval_final_rank"),
                     parseStringListMetadata(document, "retrieval_sources"),
-                    document.getText()
+                    document.getText(),
+                    knowledgeBase == null ? null : knowledgeBase.getOriginalFilename(),
+                    knowledgeBase == null ? null : knowledgeBase.getContentType(),
+                    evidenceIds.isEmpty() ? null : evidenceIds.get(index)
                 );
             })
             .toList();
@@ -576,7 +703,7 @@ public class KnowledgeBaseQueryService {
             variables.put("question", question);
             variables.put("history", formatHistoryForRewrite(history));
             String rewritePrompt = rewritePromptTemplate.render(variables);
-            String rewritten = getChatClient().prompt()
+            String rewritten = ragPrompt()
                 .user(rewritePrompt)
                 .call()
                 .content();
@@ -623,83 +750,69 @@ public class KnowledgeBaseQueryService {
         return docs != null && !docs.isEmpty();
     }
 
+    private EvidenceAssessment assessEvidence(String question, List<Document> documents) {
+        EvidenceGateMode mode = queryProperties.getEvidenceGate().getMode();
+        if (mode == EvidenceGateMode.OFF) {
+            applicationMetrics.recordRagEvidenceGate(ApplicationMetrics.Outcome.SKIPPED);
+            return null;
+        }
+        EvidenceAssessment assessment = evidenceSufficiencyService.assess(question, documents);
+        applicationMetrics.recordRagEvidenceGate(assessment.sufficient()
+            ? ApplicationMetrics.Outcome.SUCCESS : ApplicationMetrics.Outcome.FAILURE);
+        return assessment;
+    }
+
+    private RagRoutingDecision resolveAndRecordRouting(RagRoutingDecision plannedRoutingDecision,
+                                                        boolean hasEffectiveHit,
+                                                        EvidenceAssessment evidenceAssessment) {
+        RagRoutingDecision routingDecision = routingDecisionService.resolve(
+            plannedRoutingDecision, hasEffectiveHit, evidenceAssessment);
+        if (routingDecision != null && routingDecision.observed()) {
+            applicationMetrics.recordRagRouting(routingDecision.action().name().toLowerCase());
+        }
+        return routingDecision;
+    }
+
+    private boolean shouldEnforceAbstention(EvidenceAssessment assessment) {
+        return queryProperties.getEvidenceGate().getMode() == EvidenceGateMode.ENFORCE
+            && assessment != null
+            && !assessment.sufficient();
+    }
+
     private String normalizeAnswer(String answer) {
         if (answer == null || answer.isBlank()) {
             return NO_RESULT_RESPONSE;
         }
         String normalized = answer.trim();
-        if (isNoResultLike(normalized)) {
-            return NO_RESULT_RESPONSE;
-        }
         return normalized;
     }
 
-    private boolean isNoResultLike(String text) {
-        return text.contains("没有找到相关信息")
-            || text.contains("未检索到相关信息")
-            || text.contains("信息不足")
-            || text.contains("超出知识库范围")
-            || text.contains("无法根据提供内容回答");
-    }
-
     /**
-     * 先观察前一小段流式内容，快速识别“无信息”模板。
-     * - 命中无信息：立即输出固定模板并结束，防止长篇拒答
-     * - 非无信息：尽快释放缓冲并继续实时透传
+     * 保留有依据的部分回答和缺失说明，首个正文片段立即下发。
+     * 仅缓存前导空白，空流/纯空白使用空答提示；取消和错误交由操作符传播。
      */
     private Flux<String> normalizeStreamOutput(Flux<String> rawFlux) {
-        return Flux.create(sink -> {
-            StringBuilder probeBuffer = new StringBuilder();
-            AtomicBoolean passthrough = new AtomicBoolean(false);
-            AtomicBoolean completed = new AtomicBoolean(false);
-            final Disposable[] disposableRef = new Disposable[1];
-
-            disposableRef[0] = rawFlux.subscribe(
-                chunk -> {
-                    if (completed.get() || sink.isCancelled()) {
-                        return;
-                    }
-                    if (passthrough.get()) {
-                        sink.next(chunk);
-                        return;
-                    }
-
-                    probeBuffer.append(chunk);
-                    String probeText = probeBuffer.toString();
-                    if (isNoResultLike(probeText)) {
-                        completed.set(true);
-                        sink.next(NO_RESULT_RESPONSE);
-                        sink.complete();
-                        if (disposableRef[0] != null) {
-                            disposableRef[0].dispose();
-                        }
-                        return;
-                    }
-
-                    if (probeBuffer.length() >= STREAM_PROBE_CHARS) {
-                        passthrough.set(true);
-                        sink.next(probeText);
-                        probeBuffer.setLength(0);
-                    }
-                },
-                sink::error,
-                () -> {
-                    if (completed.get() || sink.isCancelled()) {
-                        return;
-                    }
-                    if (!passthrough.get()) {
-                        sink.next(normalizeAnswer(probeBuffer.toString()));
-                    }
-                    sink.complete();
-                }
-            );
-
-            sink.onCancel(() -> {
-                if (disposableRef[0] != null) {
-                    disposableRef[0].dispose();
-                }
-            });
-        });
+      return Flux.defer(() -> {
+        StringBuilder leadingWhitespace = new StringBuilder();
+        AtomicBoolean hasText = new AtomicBoolean();
+        return rawFlux.<String>handle((chunk, sink) -> {
+          if (chunk == null || chunk.isEmpty()) {
+            return;
+          }
+          if (!hasText.get()) {
+            if (chunk.isBlank()) {
+              leadingWhitespace.append(chunk);
+              return;
+            }
+            hasText.set(true);
+            sink.next(leadingWhitespace + chunk);
+            leadingWhitespace.setLength(0);
+          } else {
+            sink.next(chunk);
+          }
+        }).concatWith(Flux.defer(() -> hasText.get()
+            ? Flux.empty() : Flux.just(NO_RESULT_RESPONSE)));
+      });
     }
 
     private record SearchParams(int topK, double minScore) {
@@ -708,12 +821,16 @@ public class KnowledgeBaseQueryService {
     private record QueryContext(String originalQuestion, List<String> candidateQueries, SearchParams searchParams) {
     }
 
-    private record RetrievalResult(String query, List<Document> documents) {
+    private record RetrievalResult(String query, List<Document> documents,
+                                     HybridRetrievalService.RetrievalTrace trace) {
         private static RetrievalResult empty() {
-            return new RetrievalResult(null, List.of());
+            return new RetrievalResult(null, List.of(),
+                new HybridRetrievalService.RetrievalTrace(List.of(), List.of(), List.of(), List.of()));
         }
     }
 
-    private record SyncQueryResult(String answer, RetrievalResult retrievalResult) {
+    private record SyncQueryResult(String answer, RetrievalResult retrievalResult,
+                                   EvidenceAssessment evidenceAssessment,
+                                   RagRoutingDecision routingDecision, List<String> evidenceIds) {
     }
 }

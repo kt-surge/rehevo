@@ -46,6 +46,29 @@ class ApplicationMetricsTest {
   }
 
   @Test
+  @DisplayName("面试评估指标区分完整、部分失败和评分覆盖率")
+  void recordsInterviewEvaluationCoverageAndFailures() {
+    metrics.recordInterviewEvaluation(6, 4, 2, 3, 4.0 / 6.0, 3.0 / 4.0);
+
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_EVALUATION_REPORTS)
+        .tag(AppMetricNames.TAG_STATUS, "partial").counter().count()).isEqualTo(1.0);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_EVALUATION_ANSWERED)
+        .counter().count()).isEqualTo(6.0);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_EVALUATION_SCORED)
+        .counter().count()).isEqualTo(4.0);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_EVALUATION_FAILED)
+        .counter().count()).isEqualTo(2.0);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_EVALUATION_EVIDENCE_SUPPORTED)
+        .counter().count()).isEqualTo(3.0);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_EVALUATION_COVERAGE)
+        .tag(AppMetricNames.TAG_STATUS, "partial").summary().mean())
+        .isCloseTo(4.0 / 6.0, org.assertj.core.data.Offset.offset(0.0001));
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_EVALUATION_EVIDENCE_COVERAGE)
+        .tag(AppMetricNames.TAG_STATUS, "partial").summary().mean())
+        .isEqualTo(0.75);
+  }
+
+  @Test
   @DisplayName("Stream 指标保留有限流类型并暴露队列 Gauge")
   void recordsStreamMetricsWithBoundedStreamTag() {
     AtomicLong backlog = new AtomicLong(7);
@@ -87,7 +110,18 @@ class ApplicationMetricsTest {
         ApplicationMetrics.Outcome.SUCCESS
     );
     metrics.recordVoiceError(ApplicationMetrics.VoiceErrorStage.TURN);
+    metrics.recordVoiceCancellation(ApplicationMetrics.VoiceCancellationReason.USER);
+    metrics.recordVoiceStaleCallbackDropped();
+    metrics.recordVoiceCancelAck(TimeUnit.MILLISECONDS.toNanos(12));
+    metrics.recordVoiceClientCancelAck(18);
+    metrics.recordVoiceClientPlayback("scheduled_pcm", 120.5, 180.75);
     metrics.recordRagRewrite(ApplicationMetrics.Outcome.SKIPPED);
+    metrics.recordRagEvidenceGate(ApplicationMetrics.Outcome.FAILURE);
+    metrics.recordRagRouting("clarify");
+    metrics.recordInterviewEvaluationBatch(TimeUnit.MILLISECONDS.toNanos(20), ApplicationMetrics.Outcome.SUCCESS);
+    metrics.recordInterviewLiveFollowUp("advance", true, false);
+    metrics.recordInterviewLiveFollowUp("deepen", false, true);
+    metrics.recordInterviewPlan(6, 3, 2, 1, 0.5, 1.0);
 
     Set<String> allowed = Set.of(
         AppMetricNames.TAG_STATUS,
@@ -96,7 +130,8 @@ class ApplicationMetricsTest {
         AppMetricNames.TAG_INTERACTION,
         AppMetricNames.TAG_STREAMING,
         AppMetricNames.TAG_STAGE,
-        AppMetricNames.TAG_MODE
+        AppMetricNames.TAG_MODE,
+        AppMetricNames.TAG_REASON
     );
     assertThat(meterRegistry.getMeters())
         .extracting(Meter::getId)
@@ -108,5 +143,59 @@ class ApplicationMetricsTest {
         .tag(AppMetricNames.TAG_MODE, "stream")
         .tag(AppMetricNames.TAG_STATUS, "success")
         .timer().count()).isEqualTo(1);
+    assertThat(meterRegistry.get(AppMetricNames.VOICE_TURN_CANCELLED)
+        .tag(AppMetricNames.TAG_REASON, "user")
+        .tag(AppMetricNames.TAG_STATUS, "discarded")
+        .counter().count()).isEqualTo(1.0);
+    assertThat(meterRegistry.get(AppMetricNames.VOICE_TURN_STALE_DROPPED)
+        .tag(AppMetricNames.TAG_STATUS, "discarded")
+        .counter().count()).isEqualTo(1.0);
+    assertThat(meterRegistry.get(AppMetricNames.VOICE_TURN_CANCEL_ACK)
+        .tag(AppMetricNames.TAG_STATUS, "success")
+        .timer().count()).isEqualTo(1);
+    assertThat(meterRegistry.get(AppMetricNames.VOICE_TURN_CLIENT_CANCEL_ACK)
+        .tag(AppMetricNames.TAG_STATUS, "success")
+        .timer().count()).isEqualTo(1);
+    assertThat(meterRegistry.get(AppMetricNames.RAG_EVIDENCE_GATE)
+        .tag(AppMetricNames.TAG_STATUS, "failure")
+        .counter().count()).isEqualTo(1.0);
+    assertThat(meterRegistry.get(AppMetricNames.RAG_ROUTING)
+        .tag(AppMetricNames.TAG_STATUS, "clarify")
+        .counter().count()).isEqualTo(1.0);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_PLAN_TOTAL)
+        .tag(AppMetricNames.TAG_STATUS, "complete")
+        .counter().count()).isEqualTo(1.0);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_PLAN_RETEST_COVERAGE)
+        .tag(AppMetricNames.TAG_STATUS, "complete")
+        .summary().totalAmount()).isEqualTo(0.5);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_EVALUATION_BATCH)
+        .tag(AppMetricNames.TAG_STATUS, "success").timer().count()).isEqualTo(1);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP)
+        .tag(AppMetricNames.TAG_STATUS, "advance").counter().count()).isEqualTo(1.0);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP_RELEVANCE)
+        .summary().mean()).isEqualTo(0.5);
+    assertThat(meterRegistry.get(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP_DUPLICATE)
+        .tag(AppMetricNames.TAG_STATUS, "failure").counter().count()).isEqualTo(1.0);
+  }
+
+  @Test
+  @DisplayName("客户端收帧与起播分开计时，未知模式和非有限输入不记录延迟")
+  void recordsValidatedBrowserPlaybackTimings() {
+    metrics.recordVoiceClientPlayback("scheduled_pcm", 120.5, 180.75);
+    metrics.recordVoiceClientPlayback("output_pcm", 121.25, 201.75);
+    metrics.recordVoiceClientPlayback("unknown", 1, 2);
+    metrics.recordVoiceClientPlayback("html_playing", Double.NaN, 2);
+
+    assertThat(meterRegistry.get(AppMetricNames.VOICE_CLIENT_AUDIO_RECEIVED)
+        .tag(AppMetricNames.TAG_MODE, "scheduled_pcm").timer().totalTime(TimeUnit.MILLISECONDS))
+        .isEqualTo(120.5);
+    assertThat(meterRegistry.get(AppMetricNames.VOICE_CLIENT_PLAYBACK_START)
+        .tag(AppMetricNames.TAG_MODE, "scheduled_pcm").timer().totalTime(TimeUnit.MILLISECONDS))
+        .isEqualTo(180.75);
+    assertThat(meterRegistry.get(AppMetricNames.VOICE_CLIENT_PLAYBACK_REPORTS)
+        .tag(AppMetricNames.TAG_STATUS, "discarded").counter().count()).isEqualTo(2);
+    assertThat(meterRegistry.get(AppMetricNames.VOICE_CLIENT_PLAYBACK_START)
+        .tag(AppMetricNames.TAG_MODE, "output_pcm").timer().totalTime(TimeUnit.MILLISECONDS))
+        .isEqualTo(201.75);
   }
 }

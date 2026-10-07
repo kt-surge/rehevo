@@ -1,0 +1,26 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def projectRoot = gradle.rootProject.projectDir
+    def runner = appProject.layout.buildDirectory.dir('reference-facts/runner')
+    appProject.tasks.register('compileReferenceFactsStudy', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/interview-adaptation/ReferenceFactsStudyMain.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = runner
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('referenceFactsStudy', JavaExec) {
+        dependsOn 'compileReferenceFactsStudy'
+        classpath = appProject.files(runner) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.modules.interview.service.ReferenceFactsStudyMain'
+        workingDir projectRoot
+        systemProperty 'refs.input', appProject.findProperty('refsInput')
+        systemProperty 'refs.output', appProject.findProperty('refsOutput')
+        systemProperty 'refs.resources', appProject.findProperty('refsResources')
+        systemProperty 'refs.arm', appProject.findProperty('refsArm')
+        args '--server.address=127.0.0.1', '--server.port=0',
+            '--app.voice-interview.opening.warmup-enabled=false',
+            '--app.ai.rag.vector-task.durable-enabled=false',
+            '--app.ai.structured-max-attempts=1', '--app.interview.follow-up-count=0'
+    }
+}

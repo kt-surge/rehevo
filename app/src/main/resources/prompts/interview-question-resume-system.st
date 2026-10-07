@@ -19,5 +19,8 @@
 - 禁止使用"你在'XXX项目'中提到..."指代简历中不存在的项目
 - 每个主问题必须提供追问，写入 followUps 字段
 - 每个主问题必须包含 topicSummary 字段（10字内知识点摘要）
+- 每个主问题都必须定义 competency、keyPoints、followUpDirection 和完整的 0—4 级 rubric
+- trainingTargetIds 至多包含一个本次提供的完整训练目标 ID；无关联时为 []。关联题的问题、keyPoints 和 rubric 必须能检验该目标的练习动作与完成标准，且符合简历已有背景；不能仅因名称相近就关联
+- rubric 必须只依据简历中真实出现的项目背景设计，不得把未出现的规模、故障或职责当成评分前提
 - type 字段使用与项目技术相关的分类 key（如 JAVA、MYSQL、REDIS、SPRING 等）
 - **数量硬性要求**：questions 数组的长度必须严格等于用户要求的 questionCount，一个不能少，一个不能多

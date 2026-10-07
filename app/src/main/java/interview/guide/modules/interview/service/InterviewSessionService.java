@@ -5,6 +5,7 @@ import interview.guide.common.ai.LlmProviderRegistry;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
 import interview.guide.common.model.AsyncTaskStatus;
+import interview.guide.common.metrics.ApplicationMetrics;
 import interview.guide.infrastructure.redis.InterviewSessionCache;
 import interview.guide.infrastructure.redis.InterviewSessionCache.CachedSession;
 import interview.guide.modules.interview.listener.EvaluateStreamProducer;
@@ -12,9 +13,11 @@ import interview.guide.modules.interview.model.CreateInterviewRequest;
 import interview.guide.modules.interview.model.HistoricalQuestion;
 import interview.guide.modules.interview.model.InterviewAnswerEntity;
 import interview.guide.modules.interview.model.InterviewQuestionDTO;
+import interview.guide.modules.interview.model.InterviewPlan;
 import interview.guide.modules.interview.model.InterviewReportDTO;
 import interview.guide.modules.interview.model.InterviewSessionDTO;
 import interview.guide.modules.interview.model.InterviewSessionEntity;
+import interview.guide.modules.interview.model.LiveFollowUpDecision;
 import interview.guide.modules.interview.model.SubmitAnswerRequest;
 import interview.guide.modules.interview.model.SubmitAnswerResponse;
 import interview.guide.modules.interview.model.InterviewSessionDTO.SessionStatus;
@@ -46,6 +49,10 @@ public class InterviewSessionService {
     private final ObjectMapper objectMapper;
     private final EvaluateStreamProducer evaluateStreamProducer;
     private final LlmProviderRegistry llmProviderRegistry;
+    private final InterviewPlanService interviewPlanService;
+    private final ApplicationMetrics applicationMetrics;
+    private final LiveFollowUpDecisionService liveFollowUpDecisionService;
+    private final InterviewQuestionProperties interviewQuestionProperties;
 
     /**
      * 创建新的面试会话
@@ -73,6 +80,8 @@ public class InterviewSessionService {
         // 获取历史问题（通用模式按 skillId 查询，有简历时按 resumeId + skillId 精确匹配）
         List<HistoricalQuestion> historicalQuestions =
             persistenceService.getHistoricalQuestions(skillId, request.resumeId());
+        List<InterviewReportDTO.TrainingTask> priorTrainingTasks =
+            persistenceService.getRecentTrainingTasks(skillId, request.resumeId());
 
         // 基于 Skill 生成面试问题
         List<InterviewQuestionDTO> questions = questionService.generateQuestionsBySkill(
@@ -82,16 +91,26 @@ public class InterviewSessionService {
             request.resumeText(),
             request.questionCount(),
             historicalQuestions,
+            priorTrainingTasks,
             request.customCategories(),
             request.jdText()
         );
+        InterviewPlan plan = interviewPlanService.build(skillId, difficulty, questions, priorTrainingTasks);
+        applicationMetrics.recordInterviewPlan(
+            plan.plannedMainQuestions(), plan.plannedCompetencies(), plan.requestedFocusCompetencies(),
+            plan.prioritizedCompetencies(),
+            plan.retestCoverage(),
+            plan.competencyCoverage());
 
         // 保存到 Redis 缓存
         sessionCache.saveSession(
             sessionId,
             request.resumeText() != null ? request.resumeText() : "",
             request.resumeId(),
+            skillId,
+            difficulty,
             questions,
+            plan,
             0,
             SessionStatus.CREATED
         );
@@ -110,7 +129,8 @@ public class InterviewSessionService {
             questions.size(),
             0,
             questions,
-            SessionStatus.CREATED
+            SessionStatus.CREATED,
+            plan
         );
     }
 
@@ -211,11 +231,17 @@ public class InterviewSessionService {
             SessionStatus status = convertStatus(entity.getStatus());
 
             // 保存到 Redis 缓存
+            InterviewPlan plan = interviewPlanService.build(
+                entity.getSkillId(), entity.getDifficulty(), questions,
+                persistenceService.getRecentTrainingTasks(entity.getSkillId(), entity.getResumeId()));
             sessionCache.saveSession(
                 entity.getSessionId(),
                 entity.getResume() != null ? entity.getResume().getResumeText() : "",
                 entity.getResume() != null ? entity.getResume().getId() : null,
+                entity.getSkillId(),
+                entity.getDifficulty(),
                 questions,
+                plan,
                 entity.getCurrentQuestionIndex(),
                 status
             );
@@ -303,6 +329,19 @@ public class InterviewSessionService {
         InterviewQuestionDTO answeredQuestion = question.withAnswer(request.answer());
         questions.set(index, answeredQuestion);
 
+        InterviewQuestionProperties.LiveFollowUp liveFollowUp = interviewQuestionProperties.getLiveFollowUp();
+        LiveFollowUpDecision liveDecision = liveFollowUpDecisionService.decide(
+            answeredQuestion,
+            request.answer(),
+            questions,
+            index,
+            liveFollowUp.getMinimumAnswerCharacters(),
+            liveFollowUp.getMinimumKeyPointHits()
+        );
+        applicationMetrics.recordInterviewLiveFollowUp(
+            liveDecision.action().name().toLowerCase(java.util.Locale.ROOT),
+            liveDecision.followUpRelevant(), liveDecision.duplicateQuestion());
+
         // 移动到下一题
         int newIndex = index + 1;
 
@@ -329,7 +368,8 @@ public class InterviewSessionService {
             hasNextQuestion,
             nextQuestion,
             newIndex,
-            questions.size()
+            questions.size(),
+            liveDecision
         );
     }
 
@@ -474,7 +514,7 @@ public class InterviewSessionService {
         if (entityOpt.isPresent()) {
             provider = entityOpt.get().getLlmProvider();
         }
-        ChatClient chatClient = llmProviderRegistry.getChatClientOrDefault(provider);
+        ChatClient chatClient = llmProviderRegistry.getChatClientOrDefault(provider, LlmProviderRegistry.ToolAccess.NONE);
 
         InterviewReportDTO report = evaluationService.evaluateInterview(
             chatClient,
@@ -501,13 +541,18 @@ public class InterviewSessionService {
      */
     private InterviewSessionDTO toDTO(CachedSession session) {
         List<InterviewQuestionDTO> questions = session.getQuestions(objectMapper);
+        InterviewPlan plan = session.getPlan(objectMapper);
+        if (plan == null) {
+            plan = interviewPlanService.build(session.getSkillId(), session.getDifficulty(), questions);
+        }
         return new InterviewSessionDTO(
             session.getSessionId(),
             session.getResumeText(),
             questions.size(),
             session.getCurrentIndex(),
             questions,
-            session.getStatus()
+            session.getStatus(),
+            plan
         );
     }
 }

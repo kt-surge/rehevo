@@ -1,0 +1,18 @@
+{
+  "observedAt": "2026-10-05T15:58:43.8273499Z",
+  "health": {
+    "groups": [
+      "liveness",
+      "readiness"
+    ],
+    "status": "UP"
+  },
+  "manifestWorkspaceMatched": true,
+  "processCreatedAt": "2026-10-05T15:56:12.3861440Z",
+  "stopAfterVerify": true,
+  "port": 18080,
+  "appMain": true,
+  "sdk4490": true,
+  "springAi201": true,
+  "processId": 52728
+}

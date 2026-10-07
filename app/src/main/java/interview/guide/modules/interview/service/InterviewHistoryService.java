@@ -47,6 +47,7 @@ public class InterviewHistoryService {
         List<Object> questions = parseJson(session.getQuestionsJson(), new TypeReference<>() {});
         List<String> strengths = parseJson(session.getStrengthsJson(), new TypeReference<>() {});
         List<String> improvements = parseJson(session.getImprovementsJson(), new TypeReference<>() {});
+        List<Object> trainingTasks = parseJson(session.getTrainingTasksJson(), new TypeReference<>() {});
         List<Object> referenceAnswers = parseJson(session.getReferenceAnswersJson(), new TypeReference<>() {});
 
         // 解析所有题目（用于构建完整的答案列表）
@@ -68,6 +69,7 @@ public class InterviewHistoryService {
             questions,
             strengths,
             improvements,
+            trainingTasks,
             referenceAnswers,
             answerList
         );
@@ -83,7 +85,15 @@ public class InterviewHistoryService {
     ) {
         if (allQuestions == null || allQuestions.isEmpty()) {
             // 如果没有题目数据，回退到仅显示已回答的题目
-            return interviewMapper.toAnswerDetailDTOList(answers, this::extractKeyPoints);
+            return answers.stream()
+                .map(answer -> interviewMapper.toAnswerDetailDTO(
+                    answer,
+                    extractKeyPoints(answer),
+                    extractStringList(answer.getAnswerEvidenceJson()),
+                    extractStringList(answer.getMissingPointsJson()),
+                    extractStringList(answer.getFactualRisksJson())
+                ))
+                .toList();
         }
 
         // 将答案按 questionIndex 索引
@@ -100,7 +110,13 @@ public class InterviewHistoryService {
                 InterviewAnswerEntity answer = answerMap.get(question.questionIndex());
                 if (answer != null) {
                     // 用户已回答，使用答案数据
-                    return interviewMapper.toAnswerDetailDTO(answer, extractKeyPoints(answer));
+                    return interviewMapper.toAnswerDetailDTO(
+                        answer,
+                        extractKeyPoints(answer),
+                        extractStringList(answer.getAnswerEvidenceJson()),
+                        extractStringList(answer.getMissingPointsJson()),
+                        extractStringList(answer.getFactualRisksJson())
+                    );
                 } else {
                     // 用户未回答，构建空答案
                     return new InterviewDetailDTO.AnswerDetailDTO(
@@ -110,6 +126,13 @@ public class InterviewHistoryService {
                         null,  // userAnswer
                         question.score() != null ? question.score() : 0,  // score
                         question.feedback(),  // feedback
+                        "UNANSWERED",  // evaluationStatus
+                        0,  // rubricLevel
+                        List.of(),  // answerEvidence
+                        question.evaluationGuide() != null
+                            ? question.evaluationGuide().keyPoints() : List.of(),  // missingPoints
+                        List.of(),  // factualRisks
+                        "先完成本题回答，再根据关键点逐项自查。",  // nextAction
                         null,  // referenceAnswer
                         null,  // keyPoints
                         null   // answeredAt
@@ -124,6 +147,11 @@ public class InterviewHistoryService {
      */
     private List<String> extractKeyPoints(InterviewAnswerEntity answer) {
         return parseJson(answer.getKeyPointsJson(), new TypeReference<>() {});
+    }
+
+    private List<String> extractStringList(String json) {
+        List<String> values = parseJson(json, new TypeReference<>() {});
+        return values != null ? values : List.of();
     }
 
     /**
@@ -159,4 +187,3 @@ public class InterviewHistoryService {
         }
     }
 }
-

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Provider 管理" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.181Z" hostname="LAPTOP-BT5MEUFJ" time="0.189">
+  <properties/>
+  <testcase name="updateProvider 对纯空白 embedding model 等价于清空" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$ProviderManagement" time="0.132"/>
+  <testcase name="createProvider 对重复 id 抛出异常" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$ProviderManagement" time="0.012"/>
+  <testcase name="updateProvider 拒绝空串 baseUrl / model / apiKey" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$ProviderManagement" time="0.012"/>
+  <testcase name="deleteProvider 删除默认 provider 时抛出异常" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$ProviderManagement" time="0.012"/>
+  <testcase name="updateProvider 允许清空 embedding model" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$ProviderManagement" time="0.018"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

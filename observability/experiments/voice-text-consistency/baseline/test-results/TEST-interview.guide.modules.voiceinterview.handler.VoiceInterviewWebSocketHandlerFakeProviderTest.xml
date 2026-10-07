@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="语音 Handler Fake Provider 故障实验" tests="1" skipped="0" failures="1" errors="0" timestamp="2026-10-01T06:50:44.458Z" hostname="LAPTOP-BT5MEUFJ" time="4.87">
+  <properties/>
+  <testcase name="部分LLM流失败进入唯一失败终态，迟到TTS不发送音频" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="4.87">
+    <failure message="org.opentest4j.AssertionFailedError: &#13;&#10;Expecting value to be true but was false" type="org.opentest4j.AssertionFailedError">org.opentest4j.AssertionFailedError: 
+Expecting value to be true but was false
+	at app//interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest.failsPartialStreamWithoutLateAudio(VoiceInterviewWebSocketHandlerFakeProviderTest.java:259)
+</failure>
+  </testcase>
+  <system-out><![CDATA[14:50:46.013 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+14:50:46.094 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+14:50:46.142 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+14:50:46.155 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+14:50:46.178 [virtual-62] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+14:50:46.191 [virtual-62] WARN interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response failed for session 1: 流式生成失败
+14:50:46.194 [virtual-62] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=failure asrFinalToSubmitMs=12 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=36
+14:50:49.307 [virtual-63] WARN interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [Session: 1] Streaming TTS chunk emitter interrupted
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\yngtao\.gradle\caches\modules-2\files-2.1\net.bytebuddy\byte-buddy-agent\1.18.10\9426d28828bdcdf42666bb7a68c468279ea78f59\byte-buddy-agent-1.18.10.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>

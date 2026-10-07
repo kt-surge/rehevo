@@ -88,36 +88,41 @@ public class VoiceEvaluateStreamConsumer extends AbstractStreamConsumer<VoiceEva
     }
 
     @Override
-    protected void markProcessing(VoiceEvaluatePayload payload) {
+    protected boolean markProcessing(VoiceEvaluatePayload payload) {
         voiceInterviewService.updateEvaluateStatus(
                 payload.sessionId(), AsyncTaskStatus.PROCESSING, null);
+        return true;
     }
 
     @Override
-    protected void processBusiness(VoiceEvaluatePayload payload) {
+    protected BusinessResult processBusiness(VoiceEvaluatePayload payload) {
         Long sessionId = payload.sessionId();
         if (!sessionRepository.existsById(sessionId)) {
             log.warn("语音面试会话已被删除，跳过评估任务: sessionId={}", sessionId);
-            return;
+            return BusinessResult.SKIPPED;
         }
-        evaluationService.generateEvaluation(sessionId);
+        if (!evaluationService.generateEvaluation(sessionId)) {
+            log.info("语音会话已删除，评估结果不再提交: sessionId={}", sessionId);
+            return BusinessResult.SKIPPED;
+        }
         log.info("语音面试评估完成: sessionId={}", sessionId);
+        return BusinessResult.COMPLETED;
     }
 
     @Override
     protected void markCompleted(VoiceEvaluatePayload payload) {
-        voiceInterviewService.updateEvaluateStatus(
-                payload.sessionId(), AsyncTaskStatus.COMPLETED, null);
+        log.debug("语音报告与完成状态已原子提交: sessionId={}", payload.sessionId());
     }
 
     @Override
-    protected void markFailed(VoiceEvaluatePayload payload, String error) {
+    protected boolean markFailed(VoiceEvaluatePayload payload, String error) {
         voiceInterviewService.updateEvaluateStatus(
                 payload.sessionId(), AsyncTaskStatus.FAILED, error);
+        return true;
     }
 
     @Override
-    protected void retryMessage(VoiceEvaluatePayload payload, int retryCount) {
+    protected RetryResult retryMessage(VoiceEvaluatePayload payload, int retryCount) {
         Long sessionId = payload.sessionId();
         try {
             Map<String, String> message = Map.of(
@@ -131,10 +136,12 @@ public class VoiceEvaluateStreamConsumer extends AbstractStreamConsumer<VoiceEva
                 AsyncTaskStreamConstants.STREAM_MAX_LEN
             );
             log.info("语音面试评估任务已重新入队: sessionId={}, retryCount={}", sessionId, retryCount);
+            return RetryResult.ENQUEUED;
         } catch (Exception e) {
             log.error("重试入队失败: sessionId={}, error={}", sessionId, e.getMessage(), e);
             voiceInterviewService.updateEvaluateStatus(
                     sessionId, AsyncTaskStatus.FAILED, truncateError("重试入队失败: " + e.getMessage()));
+            return RetryResult.FAILED;
         }
     }
 }

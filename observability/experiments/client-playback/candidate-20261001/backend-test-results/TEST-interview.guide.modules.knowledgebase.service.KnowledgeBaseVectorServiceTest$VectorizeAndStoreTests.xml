@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="向量化存储测试" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:20.295Z" hostname="LAPTOP-BT5MEUFJ" time="0.993">
+  <properties/>
+  <testcase name="向量分块写入连续且稳定的证据序号" classname="interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests" time="0.385"/>
+  <testcase name="向量化成功后才删除旧数据并提升新数据" classname="interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests" time="0.12"/>
+  <testcase name="空内容处理 - 应该删除旧数据但不添加新数据" classname="interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests" time="0.085"/>
+  <testcase name="大文本分批处理 - 验证每批不超过限制" classname="interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests" time="0.139"/>
+  <testcase name="验证 metadata 使用临时 kb_id 和任务标记" classname="interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests" time="0.092"/>
+  <testcase name="文本向量化存储 - 验证基本流程" classname="interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests" time="0.085"/>
+  <testcase name="向量写入失败时清理临时数据且不删除旧数据" classname="interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests" time="0.082"/>
+  <system-out><![CDATA[16:50:20.535 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始向量化知识库: kbId=123, jobId=d0d343d2-a47a-4a26-bca9-6d48cb2acf73, contentLength=48490
+16:50:20.672 [Test worker] INFO org.springframework.ai.transformer.splitter.TextSplitter -- Splitting up document into 50 chunks.
+16:50:20.674 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 文本分块完成: 50 个chunks
+16:50:20.675 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始分批向量化: 总共 50 个chunks，分 5 批处理，每批最多 10 个
+16:50:20.676 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 知识库向量化完成: kbId=123, jobId=d0d343d2-a47a-4a26-bca9-6d48cb2acf73, chunks=50, batches=5
+16:50:20.779 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始向量化知识库: kbId=1, jobId=158e712f-f98c-4261-914b-517c727ff0f6, contentLength=2410
+16:50:20.793 [Test worker] INFO org.springframework.ai.transformer.splitter.TextSplitter -- Splitting up document into 3 chunks.
+16:50:20.794 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 文本分块完成: 3 个chunks
+16:50:20.794 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始分批向量化: 总共 3 个chunks，分 1 批处理，每批最多 10 个
+16:50:20.794 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 知识库向量化完成: kbId=1, jobId=158e712f-f98c-4261-914b-517c727ff0f6, chunks=3, batches=1
+16:50:20.885 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始向量化知识库: kbId=1, jobId=228884b2-f1b9-4986-968a-e101026c3742, contentLength=0
+16:50:20.886 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 文本分块完成: 0 个chunks
+16:50:20.886 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始分批向量化: 总共 0 个chunks，分 0 批处理，每批最多 10 个
+16:50:20.887 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 知识库向量化完成: kbId=1, jobId=228884b2-f1b9-4986-968a-e101026c3742, chunks=0, batches=0
+16:50:20.964 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始向量化知识库: kbId=2, jobId=17e7a5b8-66fb-4087-bce9-3e9a99857448, contentLength=48490
+16:50:21.025 [Test worker] INFO org.springframework.ai.transformer.splitter.TextSplitter -- Splitting up document into 50 chunks.
+16:50:21.026 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 文本分块完成: 50 个chunks
+16:50:21.027 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始分批向量化: 总共 50 个chunks，分 5 批处理，每批最多 10 个
+16:50:21.027 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 知识库向量化完成: kbId=2, jobId=17e7a5b8-66fb-4087-bce9-3e9a99857448, chunks=50, batches=5
+16:50:21.114 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始向量化知识库: kbId=123, jobId=66bdeff0-b5d5-4314-b7e5-fd13db26deb7, contentLength=2410
+16:50:21.119 [Test worker] INFO org.springframework.ai.transformer.splitter.TextSplitter -- Splitting up document into 3 chunks.
+16:50:21.119 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 文本分块完成: 3 个chunks
+16:50:21.119 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始分批向量化: 总共 3 个chunks，分 1 批处理，每批最多 10 个
+16:50:21.120 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 知识库向量化完成: kbId=123, jobId=66bdeff0-b5d5-4314-b7e5-fd13db26deb7, chunks=3, batches=1
+16:50:21.202 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始向量化知识库: kbId=1, jobId=38e1346c-5e3c-46c3-8f0a-108e5fd66813, contentLength=1205
+16:50:21.204 [Test worker] INFO org.springframework.ai.transformer.splitter.TextSplitter -- Splitting up document into 2 chunks.
+16:50:21.204 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 文本分块完成: 2 个chunks
+16:50:21.204 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始分批向量化: 总共 2 个chunks，分 1 批处理，每批最多 10 个
+16:50:21.205 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 知识库向量化完成: kbId=1, jobId=38e1346c-5e3c-46c3-8f0a-108e5fd66813, chunks=2, batches=1
+16:50:21.284 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始向量化知识库: kbId=1, jobId=bbc0c636-c724-4eff-81ae-5845a2c9a832, contentLength=2410
+16:50:21.286 [Test worker] INFO org.springframework.ai.transformer.splitter.TextSplitter -- Splitting up document into 3 chunks.
+16:50:21.286 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 文本分块完成: 3 个chunks
+16:50:21.286 [Test worker] INFO interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 开始分批向量化: 总共 3 个chunks，分 1 批处理，每批最多 10 个
+16:50:21.287 [Test worker] ERROR interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService -- 向量化知识库失败: kbId=1, jobId=bbc0c636-c724-4eff-81ae-5845a2c9a832, error=VectorStore 连接失败
+java.lang.RuntimeException: VectorStore 连接失败
+	at interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorService.vectorizeAndStore(KnowledgeBaseVectorService.java:104)
+	at interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests.lambda$testVectorizeFailureKeepsOldVectors$1(KnowledgeBaseVectorServiceTest.java:288)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:54)
+	at org.junit.jupiter.api.AssertThrows.assertThrows(AssertThrows.java:35)
+	at org.junit.jupiter.api.Assertions.assertThrows(Assertions.java:3223)
+	at interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorServiceTest$VectorizeAndStoreTests.testVectorizeFailureKeepsOldVectors(KnowledgeBaseVectorServiceTest.java:286)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.junit.platform.commons.util.ReflectionUtils.invokeMethod(ReflectionUtils.java:701)
+	at org.junit.platform.commons.support.ReflectionSupport.invokeMethod(ReflectionSupport.java:502)
+	at org.junit.jupiter.engine.support.MethodReflectionUtils.invoke(MethodReflectionUtils.java:45)
+	at org.junit.jupiter.engine.execution.MethodInvocation.proceed(MethodInvocation.java:61)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$ValidatingInvocation.proceed(InvocationInterceptorChain.java:124)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.intercept(TimeoutExtension.java:163)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestableMethod(TimeoutExtension.java:148)
+	at org.junit.jupiter.engine.extension.TimeoutExtension.interceptTestMethod(TimeoutExtension.java:86)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker$ReflectiveInterceptorCall.lambda$ofVoidMethod$0(InterceptingExecutableInvoker.java:123)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.lambda$invoke$0(InterceptingExecutableInvoker.java:105)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain$InterceptedInvocation.proceed(InvocationInterceptorChain.java:99)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.proceed(InvocationInterceptorChain.java:66)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.chainAndInvoke(InvocationInterceptorChain.java:47)
+	at org.junit.jupiter.engine.execution.InvocationInterceptorChain.invoke(InvocationInterceptorChain.java:39)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:104)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invoke(InterceptingExecutableInvoker.java:98)
+	at org.junit.jupiter.engine.execution.InterceptingExecutableInvoker.invokeVoid(InterceptingExecutableInvoker.java:71)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.lambda$invokeTestMethod$0(TestMethodTestDescriptor.java:219)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.invokeTestMethod(TestMethodTestDescriptor.java:215)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:157)
+	at org.junit.jupiter.engine.descriptor.TestMethodTestDescriptor.execute(TestMethodTestDescriptor.java:70)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:176)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at java.base/java.util.ArrayList.forEach(ArrayList.java:1596)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.invokeAll(SameThreadHierarchicalTestExecutorService.java:42)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$2(NodeTestTask.java:180)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$1(NodeTestTask.java:166)
+	at org.junit.platform.engine.support.hierarchical.Node.around(Node.java:138)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.lambda$executeRecursively$0(NodeTestTask.java:164)
+	at org.junit.platform.engine.support.hierarchical.ThrowableCollector.execute(ThrowableCollector.java:74)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.executeRecursively(NodeTestTask.java:163)
+	at org.junit.platform.engine.support.hierarchical.NodeTestTask.execute(NodeTestTask.java:116)
+	at org.junit.platform.engine.support.hierarchical.SameThreadHierarchicalTestExecutorService.submit(SameThreadHierarchicalTestExecutorService.java:36)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestExecutor.execute(HierarchicalTestExecutor.java:52)
+	at org.junit.platform.engine.support.hierarchical.HierarchicalTestEngine.execute(HierarchicalTestEngine.java:58)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.executeEngine(EngineExecutionOrchestrator.java:246)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.failOrExecuteEngine(EngineExecutionOrchestrator.java:218)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:179)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:108)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.lambda$execute$0(EngineExecutionOrchestrator.java:66)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.withInterceptedStreams(EngineExecutionOrchestrator.java:157)
+	at org.junit.platform.launcher.core.EngineExecutionOrchestrator.execute(EngineExecutionOrchestrator.java:65)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:125)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:114)
+	at org.junit.platform.launcher.core.DefaultLauncher.execute(DefaultLauncher.java:93)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:48)
+	at org.junit.platform.launcher.core.InterceptingLauncher.lambda$execute$0(InterceptingLauncher.java:41)
+	at org.junit.platform.launcher.core.ClasspathAlignmentCheckingLauncherInterceptor.intercept(ClasspathAlignmentCheckingLauncherInterceptor.java:25)
+	at org.junit.platform.launcher.core.InterceptingLauncher.execute(InterceptingLauncher.java:40)
+	at org.junit.platform.launcher.core.DelegatingLauncher.execute(DelegatingLauncher.java:48)
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.processAllTestClasses(JUnitPlatformTestClassProcessor.java:124)
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor$CollectAllTestClassesExecutor.access$000(JUnitPlatformTestClassProcessor.java:99)
+	at org.gradle.api.internal.tasks.testing.junitplatform.JUnitPlatformTestClassProcessor.stop(JUnitPlatformTestClassProcessor.java:94)
+	at org.gradle.api.internal.tasks.testing.SuiteTestClassProcessor.stop(SuiteTestClassProcessor.java:63)
+	at java.base/jdk.internal.reflect.DirectMethodHandleAccessor.invoke(DirectMethodHandleAccessor.java:103)
+	at java.base/java.lang.reflect.Method.invoke(Method.java:580)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:36)
+	at org.gradle.internal.dispatch.ReflectionDispatch.dispatch(ReflectionDispatch.java:24)
+	at org.gradle.internal.dispatch.ContextClassLoaderDispatch.dispatch(ContextClassLoaderDispatch.java:33)
+	at org.gradle.internal.dispatch.ProxyDispatchAdapter$DispatchingInvocationHandler.invoke(ProxyDispatchAdapter.java:92)
+	at jdk.proxy1/jdk.proxy1.$Proxy4.stop(Unknown Source)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker$3.run(TestWorker.java:200)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.executeAndMaintainThreadName(TestWorker.java:132)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:103)
+	at org.gradle.api.internal.tasks.testing.worker.TestWorker.execute(TestWorker.java:63)
+	at org.gradle.process.internal.worker.child.ActionExecutionWorker.execute(ActionExecutionWorker.java:56)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:122)
+	at org.gradle.process.internal.worker.child.SystemApplicationClassLoaderWorker.call(SystemApplicationClassLoaderWorker.java:72)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.run(GradleWorkerMain.java:69)
+	at worker.org.gradle.process.internal.worker.GradleWorkerMain.main(GradleWorkerMain.java:74)
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

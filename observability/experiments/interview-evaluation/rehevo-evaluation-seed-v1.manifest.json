@@ -1,0 +1,10 @@
+{
+  "version": "evaluation-seed-manifest-v1",
+  "datasetId": "rehevo-evaluation-seed-v1",
+  "reviewStatus": "draft",
+  "sha256": "f8c2c0335aa68dcb3dcbca023b6a3aff655cec9e9cc8470116fb9674b2dfb501",
+  "cases": 30,
+  "groups": 10,
+  "ranksPerGroup": 3,
+  "source": "Controlled seed for evaluation-stability plumbing; not a reviewed Gold dataset."
+}

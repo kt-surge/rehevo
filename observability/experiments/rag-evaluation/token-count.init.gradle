@@ -1,0 +1,25 @@
+// Local token accounting only; leaves the application build configuration unchanged.
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def experimentDir = new File(gradle.rootProject.projectDir, 'observability/experiments/rag-evaluation')
+    def outputClasses = appProject.layout.buildDirectory.dir('rag-token-experiment/classes')
+    appProject.tasks.register('compileRehevoChunkTokenCounts', JavaCompile) {
+        source new File(experimentDir, 'RehevoChunkTokenCounts.java')
+        classpath = appProject.configurations.runtimeClasspath
+        destinationDirectory = outputClasses
+        options.encoding = 'UTF-8'
+        javaCompiler = appProject.javaToolchains.compilerFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+    appProject.tasks.register('rehevoChunkTokenCounts', JavaExec) {
+        dependsOn 'compileRehevoChunkTokenCounts'
+        classpath = appProject.files(outputClasses) + appProject.configurations.runtimeClasspath
+        mainClass = 'RehevoChunkTokenCounts'
+        workingDir gradle.rootProject.projectDir
+        javaLauncher = appProject.javaToolchains.launcherFor {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+        args appProject.findProperty('chunkTokenInput'), appProject.findProperty('chunkTokenOutput')
+    }
+}

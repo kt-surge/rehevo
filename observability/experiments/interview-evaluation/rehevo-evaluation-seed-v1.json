@@ -1,0 +1,308 @@
+{
+  "datasetId": "rehevo-evaluation-seed-v1",
+  "llmProvider": null,
+  "repetitions": 3,
+  "referenceContext": "按答案的事实准确性、完整性、原理深度和工程权衡评分。不要因为答案长度本身给高分。",
+  "cases": [
+    {
+      "id": "hashmap-weak",
+      "groupId": "hashmap-concurrency",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "为什么 HashMap 不是线程安全的？并发场景应如何选择实现？",
+      "category": "Java并发",
+      "answer": "不知道，平时直接用 HashMap。"
+    },
+    {
+      "id": "hashmap-medium",
+      "groupId": "hashmap-concurrency",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "为什么 HashMap 不是线程安全的？并发场景应如何选择实现？",
+      "category": "Java并发",
+      "answer": "HashMap 的 put 和扩容没有同步，并发修改可能覆盖数据，所以多线程一般用 ConcurrentHashMap。"
+    },
+    {
+      "id": "hashmap-strong",
+      "groupId": "hashmap-concurrency",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "为什么 HashMap 不是线程安全的？并发场景应如何选择实现？",
+      "category": "Java并发",
+      "answer": "HashMap 的桶数组、链表或红黑树更新以及 resize 都没有并发保护，复合操作还存在检查与写入之间的竞态，可见性也没有保证。共享读写优先用 ConcurrentHashMap，并通过 compute、putIfAbsent 等原子方法表达复合操作；若需要跨多个 key 的一致性，则在更高层加锁或重构状态边界，而不是误以为换容器就自动满足业务原子性。"
+    },
+    {
+      "id": "transaction-weak",
+      "groupId": "spring-transaction",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "为什么同一个类内部调用带 @Transactional 的方法可能不生效？",
+      "category": "Spring",
+      "answer": "加了注解就会有事务，应该不会失效。"
+    },
+    {
+      "id": "transaction-medium",
+      "groupId": "spring-transaction",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "为什么同一个类内部调用带 @Transactional 的方法可能不生效？",
+      "category": "Spring",
+      "answer": "Spring 事务通常通过代理实现，类内部用 this 调用没有经过代理，所以注解可能不生效。可以把方法拆到另一个 Service。"
+    },
+    {
+      "id": "transaction-strong",
+      "groupId": "spring-transaction",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "为什么同一个类内部调用带 @Transactional 的方法可能不生效？",
+      "category": "Spring",
+      "answer": "声明式事务由 AOP 代理在方法入口开启和结束事务，自调用 this.method() 不经过代理拦截器，因此目标方法上的传播级别和回滚规则不会被应用。首选按职责拆到另一个 Service 并从代理调用，同时保证方法可代理、异常没有被吞掉；不建议为绕过设计而到处获取自身代理，还要避免把外部 HTTP 或 LLM 调用放进长事务。"
+    },
+    {
+      "id": "mysql-index-weak",
+      "groupId": "mysql-composite-index",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "联合索引 (a,b,c) 在哪些查询中能有效使用？",
+      "category": "数据库",
+      "answer": "只要 where 里有这几个字段就能用。"
+    },
+    {
+      "id": "mysql-index-medium",
+      "groupId": "mysql-composite-index",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "联合索引 (a,b,c) 在哪些查询中能有效使用？",
+      "category": "数据库",
+      "answer": "一般遵循最左前缀，按 a 或 a,b 查询可以使用，跳过 a 通常不能有效走这个索引，遇到范围查询后后续列利用会受影响。"
+    },
+    {
+      "id": "mysql-index-strong",
+      "groupId": "mysql-composite-index",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "联合索引 (a,b,c) 在哪些查询中能有效使用？",
+      "category": "数据库",
+      "answer": "B+Tree 按 a、b、c 排序，因此等值条件从最左列连续匹配时定位能力最好；a 等值、b 范围后，c 往往不能继续缩小扫描区间，但可能用于索引下推或覆盖查询。是否真正采用还取决于选择性、回表成本、排序和优化器估算，应以 EXPLAIN ANALYZE 与实际扫描行数验证，不能只凭口诀判断。"
+    },
+    {
+      "id": "cache-weak",
+      "groupId": "cache-consistency",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "数据库与 Redis 缓存如何处理一致性？",
+      "category": "缓存",
+      "answer": "先更新缓存，再更新数据库就可以。"
+    },
+    {
+      "id": "cache-medium",
+      "groupId": "cache-consistency",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "数据库与 Redis 缓存如何处理一致性？",
+      "category": "缓存",
+      "answer": "常见做法是 Cache Aside，读时缓存未命中再查数据库，写时先更新数据库再删除缓存，并设置过期时间。"
+    },
+    {
+      "id": "cache-strong",
+      "groupId": "cache-consistency",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "数据库与 Redis 缓存如何处理一致性？",
+      "category": "缓存",
+      "answer": "先明确业务容忍的是最终一致还是强一致。Cache Aside 下写数据库成功后删除缓存，配合 TTL；删除失败要通过事务消息、Outbox 或重试补偿，并保证操作幂等。还要处理并发读在删除后回填旧值，可用版本号、短期互斥或延迟双删等有边界方案。对余额等强一致数据不把缓存当权威源，并通过故障注入验证数据库成功、缓存删除失败时能否收敛。"
+    },
+    {
+      "id": "mq-weak",
+      "groupId": "message-idempotency",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "消息队列重复投递时，消费端如何保证业务幂等？",
+      "category": "分布式",
+      "answer": "MQ 一般不会重复，消费成功后确认就行。"
+    },
+    {
+      "id": "mq-medium",
+      "groupId": "message-idempotency",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "消息队列重复投递时，消费端如何保证业务幂等？",
+      "category": "分布式",
+      "answer": "给消息设置唯一 ID，消费前查去重表，处理过就跳过，业务完成后再提交确认。"
+    },
+    {
+      "id": "mq-strong",
+      "groupId": "message-idempotency",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "消息队列重复投递时，消费端如何保证业务幂等？",
+      "category": "分布式",
+      "answer": "把至少一次投递视为默认前提，用稳定业务键而不是随机重试 ID 做幂等键。去重记录与业务写入应处于同一数据库事务，依靠唯一约束解决并发重复；外部副作用则使用状态机、Inbox/Outbox 或下游幂等接口。只有本地事务提交后才 ACK，失败进入有界重试和死信，并监控重复率、重试次数与最终失败。"
+    },
+    {
+      "id": "jvm-weak",
+      "groupId": "jvm-oom",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "线上 Java 服务出现 OOM，你会如何定位？",
+      "category": "JVM",
+      "answer": "重启服务并把堆内存调大。"
+    },
+    {
+      "id": "jvm-medium",
+      "groupId": "jvm-oom",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "线上 Java 服务出现 OOM，你会如何定位？",
+      "category": "JVM",
+      "answer": "先看 OOM 类型和 GC 日志，保留 heap dump，用 MAT 查大对象和引用链，再结合监控判断是流量增长还是内存泄漏。"
+    },
+    {
+      "id": "jvm-strong",
+      "groupId": "jvm-oom",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "线上 Java 服务出现 OOM，你会如何定位？",
+      "category": "JVM",
+      "answer": "先止损并保留现场，区分 Java heap、Metaspace、direct buffer、unable to create native thread 等类型；关联容器限制、堆外内存、线程数、GC 暂停和请求量。开启退出前 heap dump 与 GC 日志，用 MAT 的 dominator tree 和 GC roots 找保留链，并对比正常实例。修复后用相同流量回放和长稳测试验证对象是否能回收，而不是只增大 Xmx 掩盖泄漏。"
+    },
+    {
+      "id": "threadpool-weak",
+      "groupId": "thread-pool",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "如何为后端异步任务设计线程池与拒绝策略？",
+      "category": "Java并发",
+      "answer": "用 Executors.newCachedThreadPool，线程越多越快。"
+    },
+    {
+      "id": "threadpool-medium",
+      "groupId": "thread-pool",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "如何为后端异步任务设计线程池与拒绝策略？",
+      "category": "Java并发",
+      "answer": "根据 CPU 密集或 IO 密集设置核心线程数，使用有界队列和显式 ThreadPoolExecutor，队列满时采用合适的拒绝策略。"
+    },
+    {
+      "id": "threadpool-strong",
+      "groupId": "thread-pool",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "如何为后端异步任务设计线程池与拒绝策略？",
+      "category": "Java并发",
+      "answer": "先按任务的到达率、服务时间、阻塞比例和下游容量估算并通过压测校准，线程池与有界队列共同限制并发和内存。为不同隔离域拆池，拒绝时根据业务选择快速失败、调用方执行或持久化排队，不能静默丢任务。必须监控活跃线程、队列深度、等待时间、拒绝数和任务 P95，并让超时与取消能传递到下游。"
+    },
+    {
+      "id": "rag-weak",
+      "groupId": "rag-grounding",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "如何降低 RAG 回答中的幻觉并证明答案有依据？",
+      "category": "RAG",
+      "answer": "把提示词写得更严格，让模型不要幻觉。"
+    },
+    {
+      "id": "rag-medium",
+      "groupId": "rag-grounding",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "如何降低 RAG 回答中的幻觉并证明答案有依据？",
+      "category": "RAG",
+      "answer": "优化切块和召回，要求模型只根据检索内容回答并返回引用，没有相关内容就拒答，再用 RAGAS 做评测。"
+    },
+    {
+      "id": "rag-strong",
+      "groupId": "rag-grounding",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "如何降低 RAG 回答中的幻觉并证明答案有依据？",
+      "category": "RAG",
+      "answer": "把问题拆为检索质量、证据充分性和生成忠实度。先用冻结集测 Recall、MRR 与不可回答样例，再对候选证据做阈值或充分性门控；证据不足时澄清或拒答。回答必须把关键结论映射到 documentId、chunkIndex 和原文片段，并分别统计引用正确率、引用覆盖率和忠实度。LLM 评审只作代理，还要人工抽检事实支持关系。"
+    },
+    {
+      "id": "voice-weak",
+      "groupId": "voice-turn-cancel",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "实时语音面试中，用户取消当前回答后如何避免旧音频继续播放？",
+      "category": "实时语音",
+      "answer": "前端把播放器清空就行。"
+    },
+    {
+      "id": "voice-medium",
+      "groupId": "voice-turn-cancel",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "实时语音面试中，用户取消当前回答后如何避免旧音频继续播放？",
+      "category": "实时语音",
+      "answer": "每轮生成 turnId，取消时停止 LLM 和 TTS，并让前端清空队列，之后收到旧 turnId 的消息就丢弃。"
+    },
+    {
+      "id": "voice-strong",
+      "groupId": "voice-turn-cancel",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "实时语音面试中，用户取消当前回答后如何避免旧音频继续播放？",
+      "category": "实时语音",
+      "answer": "服务端以 sessionId 和单调递增 turnId 作为所有 ASR、LLM、TTS 回调的所有权边界。cancel 先原子地把 Turn 置为 CANCELLED，再取消 future 和上游请求，发送带 eventId 的 ack；所有异步回调在入队与发送前都复查状态和 turnId。音频携带 sequence，前端只接收当前 Turn。用 Fake Provider 注入迟到 token、乱序音频和重复 final，验收取消后旧音频发送数为零。"
+    },
+    {
+      "id": "incident-weak",
+      "groupId": "production-incident",
+      "expectedRank": 0,
+      "expectedMinScore": 0,
+      "expectedMaxScore": 39,
+      "question": "一次发布后接口 P95 延迟升高但错误率正常，你会如何排查？",
+      "category": "工程诊断",
+      "answer": "先重启，不行就回滚。"
+    },
+    {
+      "id": "incident-medium",
+      "groupId": "production-incident",
+      "expectedRank": 1,
+      "expectedMinScore": 60,
+      "expectedMaxScore": 74,
+      "question": "一次发布后接口 P95 延迟升高但错误率正常，你会如何排查？",
+      "category": "工程诊断",
+      "answer": "对比发布前后监控，查看 CPU、内存、GC、数据库和下游耗时，通过链路追踪找慢的阶段，必要时回滚。"
+    },
+    {
+      "id": "incident-strong",
+      "groupId": "production-incident",
+      "expectedRank": 2,
+      "expectedMinScore": 75,
+      "expectedMaxScore": 100,
+      "question": "一次发布后接口 P95 延迟升高但错误率正常，你会如何排查？",
+      "category": "工程诊断",
+      "answer": "先确认时间线、影响面和是否只影响长尾，按发布批次或实例做对照；必要时止损回滚但保留样本。用 Trace 分解网关、线程池排队、数据库、缓存、外部调用和序列化耗时，同时看连接池、GC、锁竞争与查询计划。通过 feature flag 或单变量回放验证根因，修复后用同一负载比较 P50/P95/P99 和资源指标，并补告警与回归实验。"
+    }
+  ]
+}

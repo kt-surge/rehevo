@@ -1,0 +1,56 @@
+{
+  "scope": "independent byte recheck after seal, includes previous G1 seal",
+  "runs": [
+    {
+      "run": "citation-chain-20261005-r1",
+      "files": 622,
+      "mismatches": [],
+      "manifestSha256": "caa95701c00d52708635d7a4a29a9de63879b22aa119c7841061c8215c548275"
+    },
+    {
+      "run": "citation-judge-v2-20261005-r1",
+      "files": 10,
+      "mismatches": [],
+      "manifestSha256": "43b76ead3e09124a9728ad33d2fb84c26937c95d1e4f1d476e18ba840d36cdad"
+    },
+    {
+      "run": "citation-judge-v2-20261005-r2",
+      "files": 13,
+      "mismatches": [],
+      "manifestSha256": "6b7f22ab53ed679164b20a706d00ef88d67dc717ef1d5e8c259149d83a1075e5"
+    },
+    {
+      "run": "citation-judge-v2-20261005-r3",
+      "files": 13,
+      "mismatches": [],
+      "manifestSha256": "62e852f17f23cf83c73133cde24d3489d60c611f2e95167599ce7103c814a6b3"
+    },
+    {
+      "run": "citation-judge-v2-20261005-r4",
+      "files": 24,
+      "mismatches": [],
+      "manifestSha256": "3dc2a610beece60c7dea36dbdb7c5cede8b485e55c8d018d3d04f96de29637f9"
+    },
+    {
+      "run": "citation-judge-v2-20261005-r5",
+      "files": 22,
+      "mismatches": [],
+      "manifestSha256": "b3758b83ec2a2eaedfc5a87972343c98d5a5c0d93f6536a05bc2cd60bf12ccc2"
+    },
+    {
+      "run": "citation-judge-v2-20261005-r6",
+      "files": 59,
+      "mismatches": [],
+      "manifestSha256": "aee3f0596f62700c09372f64a9c27b0e3b78c3ce2d10281b32f4fedb61316002"
+    },
+    {
+      "run": "citation-judge-v2-20261005-r7",
+      "files": 385,
+      "mismatches": [],
+      "manifestSha256": "a1d0b6d808820595a31d83d0791175d23007400f5f63940d064218d00f6db1d8"
+    }
+  ],
+  "newV2Files": 526,
+  "newV2Mismatches": 0,
+  "previousG1Mismatches": []
+}

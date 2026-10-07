@@ -1,0 +1,203 @@
+{
+  "observedAt": "2026-10-05T15:32:27.080694+00:00",
+  "goalStatus": "active",
+  "outcome": "progress; original S0-S4 scope and mandatory gates preserved",
+  "semanticQualityGate": "HOLD",
+  "sealedVersions": 7,
+  "sealedFiles": 547,
+  "finalBackendTests": 454,
+  "skipped": 0,
+  "matchedCurrentAppSources": [
+    "app/src/main/java/interview/guide/common/evaluation/QuestionEvaluationGuide.java",
+    "app/src/main/java/interview/guide/modules/interview/model/InterviewPlan.java",
+    "app/src/main/java/interview/guide/modules/interview/service/InterviewPlanService.java",
+    "app/src/main/java/interview/guide/modules/interview/service/TrainingTargetSelector.java",
+    "app/src/main/java/interview/guide/modules/interview/service/InterviewQuestionService.java",
+    "app/src/main/java/interview/guide/modules/interview/service/InterviewQuestionProperties.java",
+    "app/src/main/java/interview/guide/modules/interview/skill/InterviewSkillService.java",
+    "app/src/main/java/interview/guide/common/ai/StructuredOutputInvoker.java",
+    "app/src/main/java/interview/guide/common/ai/StructuredOutputProperties.java",
+    "app/src/main/java/interview/guide/common/ai/LlmProviderRegistry.java",
+    "app/src/main/java/interview/guide/common/ai/PromptSanitizer.java",
+    "app/src/main/java/interview/guide/common/ai/PromptSecurityConstants.java",
+    "app/src/main/resources/application.yml",
+    "app/src/test/java/interview/guide/modules/interview/service/TrainingTargetAssociationRegressionTest.java",
+    "app/src/test/java/interview/guide/modules/interview/service/TrainingTargetSelectorTest.java",
+    "app/src/test/java/interview/guide/modules/interview/service/InterviewQuestionTrainingTargetTest.java",
+    "app/src/test/java/interview/guide/modules/interview/service/InterviewPlanServiceTest.java",
+    "app/src/main/resources/prompts/interview-question-skill-system.st",
+    "app/src/main/resources/prompts/interview-question-skill-user.st",
+    "app/src/main/resources/prompts/interview-question-resume-system.st",
+    "app/src/main/resources/prompts/interview-question-resume-user.st"
+  ],
+  "frontendBuildOrigin": "training-target-candidate-20261005-r1; current two changed UI sources identical",
+  "defaultModelPreflightBeforeTypeFix": {
+    "sdkChatOperations": 2,
+    "actualChatTokens": 10760,
+    "fixedOrder": [
+      "candidate",
+      "baseline"
+    ],
+    "pairs": 1,
+    "alreadyExposed": true,
+    "noFormalEffectClaim": true
+  },
+  "typeFixExternalModelCalls": 0,
+  "runtime": {
+    "stopAfterVerify": false,
+    "port": 18080,
+    "manifestWorkspaceMatched": true,
+    "health": {
+      "groups": [
+        "liveness",
+        "readiness"
+      ],
+      "status": "UP"
+    },
+    "classFilesBeforeProcessStart": [
+      {
+        "lastWriteBeforeStart": true,
+        "class": "common/evaluation/QuestionEvaluationGuide.class",
+        "sha256": "90FE9A123BE6B9CB61E6204327DAE710216E627B8C61DED530D3BF59AFACFDA5"
+      },
+      {
+        "lastWriteBeforeStart": true,
+        "class": "modules/interview/service/InterviewQuestionService.class",
+        "sha256": "0A1437B6173C37BDA4FE3AC2DEBD436AF2348BAF131D60CE31AACCB7751A2FD9"
+      },
+      {
+        "lastWriteBeforeStart": true,
+        "class": "modules/interview/skill/InterviewSkillService.class",
+        "sha256": "4ACC04B1E1A8DC97AC07EF321FB79F4F9C0E4D813ABA897CF1148C3A8879C17B"
+      }
+    ],
+    "processId": 19640,
+    "processCreatedAt": "2026-10-05T15:28:26.0416830Z",
+    "springAi201": true,
+    "sdk4490": true,
+    "observedAt": "2026-10-05T15:30:14.1545888Z",
+    "appMain": true,
+    "execHandle": 54840
+  },
+  "scope": {
+    "counts": {
+      "documents": 15,
+      "vectors": 123,
+      "voiceSessions": 0,
+      "textSessions": 0,
+      "ragSessions": 0,
+      "ragMessages": 0
+    },
+    "publicVectorSha256": "76d903d460a4f34c5f3fedcc1e31b998cb999a6fb8d2ad6105760c1ed30b495b"
+  },
+  "providerSnapshot": {
+    "capturedAt": "2026-10-05T15:32:27.018356+00:00",
+    "source": "running application DTOs backed by isolated provider DB",
+    "defaultProviders": {
+      "defaultProvider": "dashscope",
+      "defaultEmbeddingProvider": "dashscope"
+    },
+    "providers": [
+      {
+        "id": "lmstudio",
+        "baseUrl": "http://localhost:1234",
+        "model": "qwen2.5-7b-instruct",
+        "embeddingModel": null,
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": false,
+        "temperature": null,
+        "defaultChatProvider": false,
+        "defaultEmbeddingProvider": false,
+        "keyAvailable": true,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      },
+      {
+        "id": "kimi",
+        "baseUrl": "https://api.moonshot.cn/v1",
+        "model": "kimi-latest",
+        "embeddingModel": null,
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": false,
+        "temperature": 1.0,
+        "defaultChatProvider": false,
+        "defaultEmbeddingProvider": false,
+        "keyAvailable": null,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      },
+      {
+        "id": "deepseek",
+        "baseUrl": "https://api.deepseek.com",
+        "model": "deepseek-v4-flash",
+        "embeddingModel": null,
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": false,
+        "temperature": null,
+        "defaultChatProvider": false,
+        "defaultEmbeddingProvider": false,
+        "keyAvailable": null,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      },
+      {
+        "id": "glm",
+        "baseUrl": "https://open.bigmodel.cn/api/coding/paas/v4",
+        "model": "glm-5",
+        "embeddingModel": "embedding-3",
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": true,
+        "temperature": null,
+        "defaultChatProvider": false,
+        "defaultEmbeddingProvider": false,
+        "keyAvailable": null,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      },
+      {
+        "id": "dashscope",
+        "baseUrl": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "model": "qwen3.8-flash",
+        "embeddingModel": "qwen3.7-text-embedding",
+        "embeddingDimensions": 1024,
+        "supportsEmbedding": true,
+        "temperature": null,
+        "defaultChatProvider": true,
+        "defaultEmbeddingProvider": true,
+        "keyAvailable": true,
+        "keyAvailabilityNote": "masked configuration only; *** cannot distinguish absent from short credentials"
+      }
+    ],
+    "voice": {
+      "asr": {
+        "url": "wss://dashscope.aliyuncs.com/api-ws/v1/inference",
+        "model": "qwen-audio-3.0-asr-flash-streaming",
+        "language": "zh",
+        "format": "pcm",
+        "sampleRate": 16000,
+        "enableTurnDetection": true,
+        "turnDetectionType": "server_vad",
+        "turnDetectionThreshold": 0.0,
+        "turnDetectionSilenceDurationMs": 2000,
+        "keyAvailable": true
+      },
+      "tts": {
+        "model": "qwen-audio-3.1-tts-flash",
+        "voice": "longanhuan_v3.1",
+        "format": "pcm",
+        "sampleRate": 24000,
+        "mode": "commit",
+        "languageType": "Chinese",
+        "speechRate": 1.0,
+        "volume": 60,
+        "keyAvailable": true
+      }
+    },
+    "secretValuesRecorded": false
+  },
+  "noAdditionalCrossModelAuthorizationUsed": true,
+  "outstanding": [
+    "question/Rubric technical correctness and current type-template live preflight",
+    "complete text/voice evaluation-training-retest product flows",
+    "known text DELETE cache and voice evaluation transaction boundaries",
+    "formal browser voice samples and existing gates",
+    "new-material RAG retrieval/generation/citation/cost gates",
+    "full required async fault matrix"
+  ]
+}

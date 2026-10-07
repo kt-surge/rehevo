@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="启动校验" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.370Z" hostname="LAPTOP-BT5MEUFJ" time="0.154">
+  <properties/>
+  <testcase name="validateWritablePaths 对不可创建的父目录 fail-fast" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$Bootstrap" time="0.028"/>
+  <testcase name="启动时恢复持久化的语音模型配置" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$Bootstrap" time="0.126"/>
+  <system-out><![CDATA[16:50:23.417 [Test worker] INFO interview.guide.modules.llmprovider.service.LlmProviderConfigService -- config-yaml-path resolved to C:\Users\yngtao\AppData\Local\Temp\junit-7375125093728975924\llm-providers.yml (parent writable)
+16:50:23.427 [Test worker] INFO interview.guide.modules.llmprovider.service.LlmProviderConfigService -- config-env-path resolved to C:\Users\yngtao\AppData\Local\Temp\junit-7375125093728975924\llm-providers.env (parent writable)
+16:50:23.508 [Test worker] INFO interview.guide.modules.llmprovider.service.LlmProviderConfigService -- Loaded persisted voice configuration from C:\Users\yngtao\AppData\Local\Temp\junit-7375125093728975924\llm-providers.yml
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

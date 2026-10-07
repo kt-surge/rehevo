@@ -19,6 +19,11 @@ app/src/main/resources/application-dev.yml
 /docs
 SETUP_API_KEYS.md
 
+# Local evidence sources and isolated optimization runtime
+/data/local/fact-gold-v1-20261001*/
+/data/local/rehevo-opt-runtime-20261001/
+/data/local/durable-delivery-baseline-20261002/
+
 # AI Assistant documentation
 CLAUDE.local.md
 GEMINI.md
@@ -27,3 +32,11 @@ GEMINI.md
 .playwright-mcp/
 /.agents
 skills-lock.json
+
+# Local experiment payloads, runtime data and Python cache
+/data/local/
+/observability/experiments/**/runs/
+__pycache__/
+*.py[cod]
+
+/observability/experiments/**/*.log

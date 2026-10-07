@@ -1,0 +1,40 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def projectRoot = gradle.rootProject.projectDir
+    def runnerClasses = appProject.layout.buildDirectory.dir('evaluation-grounding/runner')
+    def baselineClasses = appProject.layout.buildDirectory.dir('evaluation-grounding/baseline')
+    appProject.tasks.register('compileEvaluationGrounding', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/interview-adaptation/EvaluationGroundingStudyMain.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = runnerClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('compileBaselineEvaluationGrounding', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/voice-frame-pipeline/runs/evaluation-grounding-live-baseline-20261005-r1/override/UnifiedEvaluationService.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = baselineClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('evaluationGroundingStudy', JavaExec) {
+        dependsOn 'compileEvaluationGrounding'
+        def arm = appProject.findProperty('groundingArm') ?: 'candidate'
+        if (arm == 'baseline') {
+            dependsOn 'compileBaselineEvaluationGrounding'
+            classpath = appProject.files(new File(projectRoot,
+                'observability/experiments/voice-frame-pipeline/runs/evaluation-grounding-live-baseline-20261005-r1/override/resources')) + appProject.files(baselineClasses)
+        }
+        classpath += appProject.files(runnerClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.experiments.EvaluationGroundingStudyMain'
+        workingDir projectRoot
+        systemProperty 'grounding.inputs', appProject.findProperty('groundingInputs')
+        systemProperty 'grounding.output', appProject.findProperty('groundingOutput')
+        systemProperty 'grounding.arm', arm
+        systemProperty 'grounding.toolAccess', appProject.findProperty('groundingToolAccess') ?: 'DEFAULT'
+        args '--server.address=127.0.0.1', '--server.port=0',
+            '--app.voice-interview.opening.warmup-enabled=false',
+            '--app.ai.rag.chunking.mode=TOKEN', '--app.ai.rag.chunking.max-tokens=800',
+            '--app.ai.rag.vector-task.durable-enabled=false'
+    }
+}

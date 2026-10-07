@@ -1,0 +1,91 @@
+{
+  "runs": [
+    {
+      "run": "reference-facts-source-baseline-20261006-r1",
+      "files": 59,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-source-candidate-20261006-r1",
+      "files": 57,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-source-candidate-20261006-r2",
+      "files": 55,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-source-candidate-20261006-r3",
+      "files": 55,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-source-candidate-20261006-r4",
+      "files": 55,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-live-boot-config-baseline-20261006-r1",
+      "files": 70,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-live-boot-config-candidate-20261006-r1",
+      "files": 70,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-live-spring-proxy-baseline-20261006-r1",
+      "files": 70,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-live-spring-proxy-candidate-20261006-r1",
+      "files": 70,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-live-mysql-order-baseline-20261006-r1",
+      "files": 70,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-live-mysql-order-candidate-20261006-r1",
+      "files": 70,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-live-mq-commit-baseline-20261006-r1",
+      "files": 70,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-live-mq-commit-candidate-20261006-r1",
+      "files": 70,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-regression-20261006-r1",
+      "files": 506,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-regression-20261006-r2",
+      "files": 506,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-regression-20261006-r3",
+      "files": 506,
+      "hashAndMembershipMatched": true
+    },
+    {
+      "run": "reference-facts-regression-20261006-r4",
+      "files": 519,
+      "hashAndMembershipMatched": true
+    }
+  ],
+  "totalFiles": 2878,
+  "allMatched": true
+}

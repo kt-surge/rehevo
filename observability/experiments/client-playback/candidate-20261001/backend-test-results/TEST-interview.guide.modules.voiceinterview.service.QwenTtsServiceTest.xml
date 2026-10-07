@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="QwenTtsService Unit Tests" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.290Z" hostname="LAPTOP-BT5MEUFJ" time="0.004">
+  <properties/>
+  <testcase name="Should return empty array for null text" classname="interview.guide.modules.voiceinterview.service.QwenTtsServiceTest" time="0.001"/>
+  <testcase name="TTS 返回空缓冲区时安全降级为空音频" classname="interview.guide.modules.voiceinterview.service.QwenTtsServiceTest" time="0.0"/>
+  <testcase name="Should initialize service successfully" classname="interview.guide.modules.voiceinterview.service.QwenTtsServiceTest" time="0.0"/>
+  <testcase name="Should return empty array for whitespace text" classname="interview.guide.modules.voiceinterview.service.QwenTtsServiceTest" time="0.001"/>
+  <testcase name="reload 应更新所有 TTS 配置字段" classname="interview.guide.modules.voiceinterview.service.QwenTtsServiceTest" time="0.0"/>
+  <testcase name="Should return empty array for empty text" classname="interview.guide.modules.voiceinterview.service.QwenTtsServiceTest" time="0.0"/>
+  <testcase name="Should cleanup resources on destroy" classname="interview.guide.modules.voiceinterview.service.QwenTtsServiceTest" time="0.001"/>
+  <testcase name="复制音频时不改变调用方缓冲区的读取位置" classname="interview.guide.modules.voiceinterview.service.QwenTtsServiceTest" time="0.0"/>
+  <system-out><![CDATA[16:50:30.291 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenTtsService -- QwenTtsService initialized with model: qwen-audio-3.0-tts-flash, voice: longanhuan_v3.6, sampleRate: 16000Hz
+16:50:30.293 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenTtsService -- QwenTtsService initialized with model: qwen-audio-3.0-tts-flash, voice: longanhuan_v3.6, sampleRate: 16000Hz
+16:50:30.293 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenTtsService -- QwenTtsService initialized with model: qwen-audio-3.0-tts-flash, voice: longanhuan_v3.6, sampleRate: 16000Hz
+16:50:30.293 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenTtsService -- QwenTtsService reloaded: model=new-tts-model, voice=Serena
+16:50:30.294 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenTtsService -- QwenTtsService initialized with model: qwen-audio-3.0-tts-flash, voice: longanhuan_v3.6, sampleRate: 16000Hz
+16:50:30.294 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenTtsService -- QwenTtsService initialized with model: qwen-audio-3.0-tts-flash, voice: longanhuan_v3.6, sampleRate: 16000Hz
+16:50:30.295 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenTtsService -- QwenTtsService destroyed successfully
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

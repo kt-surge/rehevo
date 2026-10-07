@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="stripHtml() 测试" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:19.347Z" hostname="LAPTOP-BT5MEUFJ" time="0.007">
+  <properties/>
+  <testcase name="纯文本不应被修改" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.0"/>
+  <testcase name="转换 HTML 实体" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.0"/>
+  <testcase name="压缩多余空格" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.001"/>
+  <testcase name="移除 HTML 标签" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.0"/>
+  <testcase name="处理 nbsp 空格" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.001"/>
+  <testcase name="[1] input = null" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.001"/>
+  <testcase name="[2] input = &quot;&quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.001"/>
+  <testcase name="[3] input = &quot;   &quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.0"/>
+  <testcase name="[4] input = &quot;\n&quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.0"/>
+  <testcase name="移除自闭合标签" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$StripHtmlTests" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

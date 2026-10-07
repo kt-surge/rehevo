@@ -1,0 +1,9 @@
+{
+  "observedAt": "2026-10-05T14:14:01.1322113Z",
+  "classpathWrapper": "C:\\Users\\yngtao\\.gradle\\.tmp\\gradle-javaexec-classpath844451113107717685.jar",
+  "action": "stop-only-verified-isolated-app",
+  "manifestWorkspaceMatched": true,
+  "port": 18080,
+  "processId": 45148,
+  "appMain": true
+}

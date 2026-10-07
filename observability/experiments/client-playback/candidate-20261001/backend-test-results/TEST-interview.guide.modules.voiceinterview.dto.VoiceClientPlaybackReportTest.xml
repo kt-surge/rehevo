@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="客户端起播指标输入边界" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.842Z" hostname="LAPTOP-BT5MEUFJ" time="0.003">
+  <properties/>
+  <testcase name="拒绝空请求、不完整身份、未知播放模式和字符串耗时" classname="interview.guide.modules.voiceinterview.dto.VoiceClientPlaybackReportTest" time="0.003"/>
+  <testcase name="拒绝非有限、负数、倒序和超预算耗时" classname="interview.guide.modules.voiceinterview.dto.VoiceClientPlaybackReportTest" time="0.0"/>
+  <testcase name="接受合法同一时钟的两个阶段耗时" classname="interview.guide.modules.voiceinterview.dto.VoiceClientPlaybackReportTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -93,6 +93,15 @@ app:
     default-provider: dashscope
     default-embedding-provider: dashscope
     embedding-dimensions: ${APP_AI_EMBEDDING_DIMENSIONS:1024}
+    # 每次模型 HTTP 调用的连接/读取上限；批次评分与结构化重试以此作为最内层故障边界。
+    connect-timeout-ms: ${APP_AI_CONNECT_TIMEOUT_MS:10000}
+    read-timeout-ms: ${APP_AI_READ_TIMEOUT_MS:60000}
+    # 固定实时面试与 RAG 的直接回答基线；可在部署配置中覆盖，不影响其他型号。
+    # 方括号保留模型名中的点，防止 Map 绑定将其拆成嵌套字段。
+    chat-extra-body-by-model:
+      "[qwen3.8-flash]":
+        enable_thinking: false
+        preserve_thinking: false
     security:
       api-key-encryption-key: ${APP_AI_CONFIG_ENCRYPTION_KEY:}
       require-encryption-key: ${APP_AI_CONFIG_REQUIRE_ENCRYPTION_KEY:true}
@@ -108,7 +117,7 @@ app:
         base-url: https://dashscope.aliyuncs.com/compatible-mode/v1
         # 兼容已有的 Windows 用户环境变量 ALI-API-KEY；部署时优先使用标准变量 AI_BAILIAN_API_KEY。
         api-key: ${AI_BAILIAN_API_KEY:${ALI-API-KEY:}}
-        model: ${AI_MODEL:qwen3.7-flash}
+        model: ${AI_MODEL:qwen3.8-flash}
         embedding-model: qwen3.7-text-embedding
         embedding-dimensions: 1024
         supports-embedding: true
@@ -161,8 +170,29 @@ app:
     # 是否启用 Spring AI 2.0 entity schema validation retry（失败时仍受 structured-max-attempts 外层控制）
     structured-schema-validation-enabled: ${APP_AI_STRUCTURED_SCHEMA_VALIDATION_ENABLED:true}
     rag:
+      stream:
+        deadline-seconds: ${APP_AI_RAG_STREAM_DEADLINE_SECONDS:180}
+        max-active-sessions: ${APP_AI_RAG_STREAM_MAX_ACTIVE_SESSIONS:64}
+        max-answer-characters: ${APP_AI_RAG_STREAM_MAX_ANSWER_CHARACTERS:200000}
+        heartbeat-seconds: ${APP_AI_RAG_STREAM_HEARTBEAT_SECONDS:15}
+      vector-task:
+        # 执行租约/预算与完整故障门完成前，持久化恢复不默认开启。
+        durable-enabled: ${APP_AI_RAG_VECTOR_TASK_DURABLE_ENABLED:false}
+        scan-delay-ms: ${APP_AI_RAG_VECTOR_TASK_SCAN_DELAY_MS:1000}
+        delivery-lease-ms: ${APP_AI_RAG_VECTOR_TASK_DELIVERY_LEASE_MS:10000}
+        redelivery-delay-ms: ${APP_AI_RAG_VECTOR_TASK_REDELIVERY_DELAY_MS:30000}
+        execution-lease-ms: ${APP_AI_RAG_VECTOR_TASK_EXECUTION_LEASE_MS:90000}
+        heartbeat-delay-ms: ${APP_AI_RAG_VECTOR_TASK_HEARTBEAT_DELAY_MS:10000}
+        max-execution-attempts: ${APP_AI_RAG_VECTOR_TASK_MAX_EXECUTION_ATTEMPTS:4}
+        retry-delay-ms: ${APP_AI_RAG_VECTOR_TASK_RETRY_DELAY_MS:2000}
+      chunking:
+        # 默认沿用旧 TokenTextSplitter；STRUCTURED 仅在实验支持后显式启用。
+        mode: ${APP_AI_RAG_CHUNKING_MODE:TOKEN}
+        max-tokens: ${APP_AI_RAG_CHUNKING_MAX_TOKENS:800}
       rewrite:
         enabled: ${APP_AI_RAG_REWRITE_ENABLED:false}
+      citation:
+        enabled: ${APP_AI_RAG_CITATION_ENABLED:false}
       search:
         mode: ${APP_AI_RAG_RETRIEVAL_MODE:HYBRID}
         short-query-length: ${APP_AI_RAG_SHORT_QUERY_LENGTH:4}
@@ -179,17 +209,38 @@ app:
         vector-weight: ${APP_AI_RAG_VECTOR_WEIGHT:3.0}
         lexical-weight: ${APP_AI_RAG_LEXICAL_WEIGHT:1.0}
         initialize-schema: ${APP_AI_RAG_INITIALIZE_LEXICAL_SCHEMA:true}
+      context-expansion:
+        # 仅 HYBRID_CONTEXT 实验模式启用；默认 HYBRID 不扩大上下文。
+        seed-chunks: ${APP_AI_RAG_CONTEXT_EXPANSION_SEED_CHUNKS:2}
+        neighbors-per-seed: ${APP_AI_RAG_CONTEXT_EXPANSION_NEIGHBORS_PER_SEED:2}
       rerank:
         enabled: ${APP_AI_RAG_RERANK_ENABLED:false}
         workspace-id: ${DASHSCOPE_WORKSPACE_ID:}
         api-key: ${AI_BAILIAN_API_KEY:${ALI-API-KEY:}}
         model: ${APP_AI_RAG_RERANK_MODEL:qwen3-rerank}
         instruct: ${APP_AI_RAG_RERANK_INSTRUCT:Given a web search query, retrieve relevant passages that answer the query.}
+      evidence-gate:
+        mode: ${APP_AI_RAG_EVIDENCE_GATE_MODE:OBSERVE}
+      routing:
+        # 仅观察路由建议；尚无独立冻结集支撑自动澄清或拒答。
+        mode: ${APP_AI_RAG_ROUTING_MODE:OBSERVE}
 
   interview:
     follow-up-count: ${APP_INTERVIEW_FOLLOW_UP_COUNT:1}
+    live-follow-up:
+      # 当前只观察并返回建议；不因模型或启发式结论自动跳过候选人题目。
+      mode: ${APP_INTERVIEW_LIVE_FOLLOW_UP_MODE:OBSERVE}
+      minimum-answer-characters: ${APP_INTERVIEW_LIVE_FOLLOW_UP_MINIMUM_ANSWER_CHARACTERS:40}
+      minimum-key-point-hits: ${APP_INTERVIEW_LIVE_FOLLOW_UP_MINIMUM_KEY_POINT_HITS:1}
     evaluation:
       batch-size: ${APP_INTERVIEW_EVALUATION_BATCH_SIZE:8}
+      # 默认串行；提高前必须用同一 Provider 的受控实验确认不放大限流与失败率。
+      max-concurrent-batches: ${APP_INTERVIEW_EVALUATION_MAX_CONCURRENT_BATCHES:1}
+      batch-executor-queue-capacity: ${APP_INTERVIEW_EVALUATION_BATCH_EXECUTOR_QUEUE_CAPACITY:16}
+      failed-item-retry-limit: ${APP_INTERVIEW_EVALUATION_FAILED_ITEM_RETRY_LIMIT:3}
+      # 整份报告的模型调用预算；耗尽后返回已完成部分并标记其余题为评估失败。
+      request-deadline-seconds: ${APP_INTERVIEW_EVALUATION_REQUEST_DEADLINE_SECONDS:180}
+      benchmark-enabled: ${APP_INTERVIEW_EVALUATION_BENCHMARK_ENABLED:false}
   resume:
     upload-dir: ${java.io.tmpdir}/rehevo/resumes
     allowed-types:
@@ -247,7 +298,7 @@ app:
     tts:
       default-voice: ${APP_VOICE_INTERVIEW_TTS_DEFAULT_VOICE:siyue}  # 思悦 - 温柔自然的女声
 
-    # Qwen-Audio 3.0 streaming ASR/TTS configuration
+    # Qwen-Audio streaming ASR/TTS configuration
     qwen:
       asr:
         url: wss://dashscope.aliyuncs.com/api-ws/v1/inference
@@ -264,9 +315,9 @@ app:
 
       # 音色列表文档：https://help.aliyun.com/zh/model-studio/qwen-audio-tts-voice-list
       tts:
-        model: qwen-audio-3.0-tts-flash
+        model: ${APP_VOICE_TTS_MODEL:qwen-audio-3.1-tts-flash}
         api-key: ${AI_BAILIAN_API_KEY:${ALI-API-KEY:}}
-        voice: longanhuan_v3.6
+        voice: ${APP_VOICE_TTS_VOICE:longanhuan_v3.1}
         format: pcm
         sample-rate: 24000
         mode: commit
@@ -284,12 +335,20 @@ app:
     max-wait-for-continuation-ms: ${APP_VOICE_MAX_WAIT_FOR_CONTINUATION_MS:7000}
     # 语音面试单轮面试官回复最大长度（字符）
     ai-question-max-chars: ${APP_VOICE_AI_QUESTION_MAX_CHARS:120}
+    ai-question-timeout-seconds: ${APP_VOICE_AI_QUESTION_TIMEOUT_SECONDS:20}
+    role-history-enabled: ${APP_VOICE_ROLE_HISTORY_ENABLED:false}
     # 是否按句子边合成边推送语音；开启后首段语音不用等待完整回复生成结束
     chunked-audio-enabled: ${APP_VOICE_CHUNKED_AUDIO_ENABLED:true}
+    skill-preload-enabled: ${APP_VOICE_SKILL_PRELOAD_ENABLED:false}
     # 单句 TTS 合成超时，避免某一句卡住整轮播放
     tts-timeout-seconds: ${APP_VOICE_TTS_TIMEOUT_SECONDS:8}
     # 单会话并发 TTS 上限，控制首段语音速度和服务连接压力
     max-concurrent-tts-per-session: ${APP_VOICE_MAX_CONCURRENT_TTS_PER_SESSION:3}
+    # 实验性同句帧流；浏览器完整验收前默认关闭
+    frame-tts:
+      enabled: ${APP_VOICE_FRAME_TTS_ENABLED:false}
+      max-pending-sentences: ${APP_VOICE_FRAME_TTS_MAX_PENDING_SENTENCES:16}
+      max-buffered-bytes: ${APP_VOICE_FRAME_TTS_MAX_BUFFERED_BYTES:720000}
 
     # Rate limiting
     rate-limit:
@@ -318,11 +377,15 @@ management:
         app.voice.interview.tts.duration: true
         app.voice.interview.turn.duration: true
         app.voice.interview.turn.stage_latency: true
+        app.voice.interview.client.first_audio_received_latency: true
+        app.voice.interview.client.playback_start_latency: true
       slo:
         app.voice.interview.llm.first_token_latency: 1s,3s,5s,10s,15s,20s,30s,45s,60s,90s
         app.voice.interview.first_audio_latency: 1s,3s,5s,10s,15s,20s,30s,45s,60s,90s
         app.voice.interview.turn.duration: 1s,3s,5s,10s,15s,20s,30s,45s,60s,90s
         app.voice.interview.turn.stage_latency: 1s,3s,5s,10s,15s,20s,30s,45s,60s,90s
+        app.voice.interview.client.first_audio_received_latency: 100ms,250ms,500ms,1s,2s,3s,5s,10s,20s,45s,90s,120s
+        app.voice.interview.client.playback_start_latency: 100ms,250ms,500ms,1s,2s,3s,5s,10s,20s,45s,90s,120s
   endpoints:
     web:
       exposure:

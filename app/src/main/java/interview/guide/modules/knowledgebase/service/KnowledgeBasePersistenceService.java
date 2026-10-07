@@ -3,7 +3,7 @@ package interview.guide.modules.knowledgebase.service;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
 import interview.guide.modules.knowledgebase.model.KnowledgeBaseEntity;
-import interview.guide.modules.knowledgebase.model.VectorStatus;
+import interview.guide.modules.knowledgebase.model.VectorTaskInput;
 import interview.guide.modules.knowledgebase.repository.KnowledgeBaseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +23,9 @@ import java.util.Map;
 public class KnowledgeBasePersistenceService {
 
     private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final KnowledgeBaseVectorTaskService vectorTasks;
+
+    public record AcceptedKnowledgeBase(KnowledgeBaseEntity knowledgeBase, String generation) {}
 
     /**
      * 处理重复知识库（更新访问计数）
@@ -57,6 +60,19 @@ public class KnowledgeBasePersistenceService {
     @Transactional(rollbackFor = Exception.class)
     public KnowledgeBaseEntity saveKnowledgeBase(MultipartFile file, String name, String category,
                                                   String storageKey, String storageUrl, String fileHash) {
+        return persistKnowledgeBase(file, name, category, storageKey, storageUrl, fileHash);
+    }
+
+    @Transactional(rollbackFor = Exception.class)
+    public AcceptedKnowledgeBase saveKnowledgeBaseAndTask(MultipartFile file, String name, String category,
+        String storageKey, String storageUrl, String fileHash, VectorTaskInput input) {
+        KnowledgeBaseEntity saved = persistKnowledgeBase(file, name, category, storageKey, storageUrl, fileHash);
+        String generation = vectorTasks.begin(saved.getId(), input);
+        return new AcceptedKnowledgeBase(saved, generation);
+    }
+
+    private KnowledgeBaseEntity persistKnowledgeBase(MultipartFile file, String name, String category,
+        String storageKey, String storageUrl, String fileHash) {
         try {
             KnowledgeBaseEntity kb = new KnowledgeBaseEntity();
             kb.setFileHash(fileHash);
@@ -78,21 +94,6 @@ public class KnowledgeBasePersistenceService {
     }
 
     /**
-     * 更新知识库向量化状态为 PENDING
-     */
-    @Transactional(rollbackFor = Exception.class)
-    public void updateVectorStatusToPending(Long kbId) {
-        KnowledgeBaseEntity kb = knowledgeBaseRepository.findById(kbId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));
-        
-        kb.setVectorStatus(VectorStatus.PENDING);
-        kb.setVectorError(null);
-        knowledgeBaseRepository.save(kb);
-        
-        log.info("知识库向量化状态已更新为 PENDING: kbId={}", kbId);
-    }
-
-    /**
      * 从文件名提取知识库名称（去除扩展名）
      */
     private String extractNameFromFilename(String filename) {
@@ -106,4 +107,3 @@ public class KnowledgeBasePersistenceService {
         return filename;
     }
 }
-

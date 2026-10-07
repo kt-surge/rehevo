@@ -1,0 +1,11 @@
+{
+  "failures": 0,
+  "skipped": 0,
+  "command": ".\\gradlew.bat :app:test --no-daemon --rerun-tasks",
+  "durationSeconds": 82,
+  "errors": 0,
+  "suites": 62,
+  "timestamp": "2026-10-01T06:57:18.6210663Z",
+  "freshTasksExecuted": 5,
+  "tests": 283
+}

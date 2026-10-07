@@ -184,6 +184,11 @@ public class VoiceInterviewService {
         return sessionRepository.findById(sessionId).orElse(null);
     }
 
+  /** 任务状态轮询以数据库为准，避免活动会话缓存遮蔽已提交的评估状态。 */
+  public VoiceInterviewSessionEntity getEvaluationSession(Long sessionId) {
+    return sessionRepository.findById(sessionId).orElse(null);
+  }
+
     /**
      * Start a new interview phase
      * 开始新的面试阶段
@@ -536,7 +541,7 @@ public class VoiceInterviewService {
                 .status(session.getStatus().name())
                 .startTime(session.getStartTime())
                 .plannedDuration(session.getPlannedDuration())
-                .webSocketUrl(String.format("ws://localhost:8080/ws/voice-interview/%d", session.getId()))
+                .webSocketUrl(String.format("/ws/voice-interview/%d", session.getId()))
                 .build();
     }
 
@@ -564,17 +569,12 @@ public class VoiceInterviewService {
      * Update evaluation status on session entity (shared by Producer/Consumer/Controller)
      */
     public void updateEvaluateStatus(Long sessionId, AsyncTaskStatus status, String error) {
-        try {
-            sessionRepository.findById(sessionId).ifPresent(session -> {
-                session.setEvaluateStatus(status);
-                session.setEvaluateError(error);
-                sessionRepository.save(session);
-                log.debug("Evaluation status updated: sessionId={}, status={}", sessionId, status);
-            });
-        } catch (Exception e) {
-            log.error("Failed to update evaluation status: sessionId={}, status={}, error={}",
-                    sessionId, status, e.getMessage(), e);
-        }
+      sessionRepository.findById(sessionId).ifPresent(session -> {
+        session.setEvaluateStatus(status);
+        session.setEvaluateError(error);
+        sessionRepository.save(session);
+        log.debug("Evaluation status updated: sessionId={}, status={}", sessionId, status);
+      });
     }
 
     /**
@@ -606,14 +606,28 @@ public class VoiceInterviewService {
      */
     @Transactional
     public void deleteSession(Long sessionId) {
-        if (!sessionRepository.existsById(sessionId)) {
+        if (sessionRepository.findByIdForUpdate(sessionId).isEmpty()) {
             throw new BusinessException(ErrorCode.VOICE_SESSION_NOT_FOUND, "会话不存在: " + sessionId);
         }
         evaluationRepository.findBySessionId(sessionId).ifPresent(evaluationRepository::delete);
         messageRepository.deleteBySessionId(sessionId);
         sessionRepository.deleteById(sessionId);
+        invalidateSessionCacheAfterCommit(sessionId);
         log.info("Deleted voice interview session: {}", sessionId);
     }
+
+  void invalidateSessionCacheAfterCommit(Long sessionId) {
+    if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+      invalidateSessionCache(sessionId);
+      return;
+    }
+    TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+      @Override
+      public void afterCommit() {
+        invalidateSessionCache(sessionId);
+      }
+    });
+  }
 
     /**
      * Cache session in Redis

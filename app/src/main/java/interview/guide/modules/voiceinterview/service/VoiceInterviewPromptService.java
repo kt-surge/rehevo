@@ -2,28 +2,49 @@ package interview.guide.modules.voiceinterview.service;
 
 import interview.guide.common.ai.PromptSanitizer;
 import interview.guide.common.ai.PromptSecurityConstants;
+import interview.guide.common.exception.BusinessException;
+import interview.guide.common.exception.ErrorCode;
+import interview.guide.modules.interview.skill.InterviewSkillService;
+import interview.guide.modules.voiceinterview.config.VoiceInterviewProperties;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
+
+import java.util.Map;
 
 @Service
 @Slf4j
 public class VoiceInterviewPromptService {
 
     private final PromptSanitizer promptSanitizer;
+    private final InterviewSkillService skillService;
+    private final VoiceInterviewProperties properties;
+    private final PromptTemplate preloadedSkillTemplate =
+        new PromptTemplate(new ClassPathResource("prompts/voice-skill-preloaded.st"));
+    private final PromptTemplate responseConstraintsTemplate =
+        new PromptTemplate(new ClassPathResource("prompts/voice-response-constraints.st"));
+    private final PromptTemplate questionRepairTemplate =
+        new PromptTemplate(new ClassPathResource("prompts/voice-question-repair.st"));
 
-    public VoiceInterviewPromptService(PromptSanitizer promptSanitizer) {
+    public VoiceInterviewPromptService(PromptSanitizer promptSanitizer,
+                                      InterviewSkillService skillService,
+                                      VoiceInterviewProperties properties) {
         this.promptSanitizer = promptSanitizer;
+        this.skillService = skillService;
+        this.properties = properties;
     }
 
-    private static final String VOICE_RESPONSE_CONSTRAINTS = """
-            【语音面试输出约束】
-            1. 每轮只问 1 个主问题，必要时最多补 1 个短追问。
-            2. 总长度控制在 2-4 句，避免长段落、列表、Markdown、代码块。
-            3. 不要重复开场白，不要复述上一轮已问过的完整问题。
-            4. 若候选人回答过短或含糊，直接追问一个具体的技术细节或给出提示引导，不要简单确认后停止。
-            5. 当候选人明确要求换题时，立即切换到新的技术方向，不要停留在当前话题。
-            6. 语气简洁直接，适配口语对话。
-            """;
+    public boolean isSkillPreloaded(String skillId) {
+      return properties.isSkillPreloadEnabled() && skillId != null && !skillId.isBlank()
+          && !InterviewSkillService.CUSTOM_SKILL_ID.equals(skillId);
+    }
+
+    public String generateQuestionRepairPrompt(String draft) {
+      return questionRepairTemplate.render(Map.of(
+          "maxChars", Math.max(80, properties.getAiQuestionMaxChars()),
+          "draft", promptSanitizer.wrapWithDelimiters("draft", promptSanitizer.sanitize(draft))));
+    }
 
     private static final String SKILL_TOOL_INSTRUCTION = """
             你是一位 %s 方向的面试官。
@@ -34,11 +55,19 @@ public class VoiceInterviewPromptService {
     public String generateSystemPromptWithContext(String skillId, String resumeText) {
         StringBuilder prompt = new StringBuilder();
 
-        if (skillId != null && !skillId.isBlank()) {
+        if (isSkillPreloaded(skillId)) {
+            var skill = skillService.getSkill(skillId);
+            if (skill.persona() == null || skill.persona().isBlank()) {
+              throw new BusinessException(ErrorCode.BAD_REQUEST, "面试岗位规则为空");
+            }
+            prompt.append(preloadedSkillTemplate.render(Map.of(
+                "skillId", skill.id(), "skillName", skill.name(), "persona", skill.persona())));
+        } else if (skillId != null && !skillId.isBlank()) {
             prompt.append(String.format(SKILL_TOOL_INSTRUCTION, skillId, skillId));
         }
 
-        prompt.append("\n\n").append(VOICE_RESPONSE_CONSTRAINTS);
+        prompt.append("\n\n").append(responseConstraintsTemplate.render(Map.of(
+            "maxChars", Math.max(80, properties.getAiQuestionMaxChars()))));
 
         if (resumeText != null && !resumeText.isEmpty()) {
             String safeResume = promptSanitizer.sanitize(resumeText);

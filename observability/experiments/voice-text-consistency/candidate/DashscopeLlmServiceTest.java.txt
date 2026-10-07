@@ -1,0 +1,199 @@
+package interview.guide.modules.voiceinterview.service;
+
+import interview.guide.common.ai.LlmProviderRegistry;
+import interview.guide.common.ai.PromptSanitizer;
+import interview.guide.modules.resume.repository.ResumeRepository;
+import interview.guide.modules.voiceinterview.config.VoiceInterviewProperties;
+import interview.guide.modules.voiceinterview.model.VoiceInterviewSessionEntity;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.ai.chat.client.ChatClient;
+import reactor.core.publisher.Flux;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+@DisplayName("语音面试 LLM 服务测试")
+class DashscopeLlmServiceTest {
+
+  @Mock
+  private LlmProviderRegistry llmProviderRegistry;
+  @Mock
+  private VoiceInterviewPromptService promptService;
+  @Mock
+  private ResumeRepository resumeRepository;
+  @Mock
+  private PromptSanitizer promptSanitizer;
+
+  private DashscopeLlmService service;
+  private VoiceInterviewSessionEntity session;
+
+  @BeforeEach
+  void setUp() {
+    service = new DashscopeLlmService(
+        llmProviderRegistry,
+        promptService,
+        resumeRepository,
+        new VoiceInterviewProperties(),
+        promptSanitizer
+    );
+    session = VoiceInterviewSessionEntity.builder()
+        .id(1L)
+        .skillId("java-backend")
+        .llmProvider("dashscope")
+        .build();
+    when(promptService.generateSystemPromptWithContext("java-backend", null))
+        .thenReturn("system prompt");
+    when(promptSanitizer.sanitize("请介绍项目")).thenReturn("请介绍项目");
+    when(promptSanitizer.wrapWithDelimiters("input", "请介绍项目"))
+        .thenReturn("<input>请介绍项目</input>");
+  }
+
+  @Test
+  @DisplayName("模型超时返回稳定的用户提示")
+  void mapTimeoutToUserMessage() {
+    when(llmProviderRegistry.getVoiceChatClient("dashscope"))
+        .thenThrow(new IllegalStateException("request timeout"));
+
+    String result = service.chat("请介绍项目", session, List.of());
+
+    assertThat(result).isEqualTo("AI 服务响应超时，请稍后重试");
+    verify(llmProviderRegistry).getVoiceChatClient("dashscope");
+  }
+
+  @Test
+  @DisplayName("模型认证失败返回可操作提示")
+  void mapAuthenticationFailureToUserMessage() {
+    when(llmProviderRegistry.getVoiceChatClient("dashscope"))
+        .thenThrow(new IllegalStateException("403 Authentication failed"));
+
+    String result = service.chat("请介绍项目", session, List.of());
+
+    assertThat(result).isEqualTo("AI 服务认证失败，请检查 API Key 配置");
+  }
+
+  @Test
+  @DisplayName("流式聚合空 Chunk 异常允许降级为非流式调用")
+  void identifiesStreamingAggregationFailure() {
+    assertThat(DashscopeLlmService.isStreamingAggregationFailure(
+        new IllegalStateException("stream failed", new NoSuchElementException("No value present"))
+    )).isTrue();
+    assertThat(DashscopeLlmService.isStreamingAggregationFailure(
+        new IllegalStateException("request timeout")
+    )).isFalse();
+
+    when(llmProviderRegistry.getVoiceChatClient("dashscope"))
+        .thenThrow(new IllegalStateException("request timeout"));
+    assertThat(service.chat("请介绍项目", session, List.of()))
+        .isEqualTo("AI 服务响应超时，请稍后重试");
+  }
+
+  @Test
+  @DisplayName("完整句与尾巴分开下发且字幕终稿与语音内容一致")
+  void streamsOnlyCompleteSentences() {
+    stubStream(Flux.just("第一句。第二", "句？尾巴"));
+    List<String> sentences = new ArrayList<>();
+    List<String> subtitles = new ArrayList<>();
+
+    var result = service.chatStreamSentences(
+        "请介绍项目", subtitles::add, sentences::add, session, List.of());
+
+    assertThat(result.success()).isTrue();
+    assertThat(sentences).containsExactly("第一句。", "第二句？", "尾巴");
+    assertThat(String.join("", sentences)).isEqualTo(result.content());
+    assertThat(subtitles).last().isEqualTo(result.content());
+  }
+
+  @Test
+  @DisplayName("超长回答在统一预算处取消上游且不会播出超预算内容")
+  void cancelsUpstreamWhenBudgetReached() {
+    AtomicBoolean cancelled = new AtomicBoolean();
+    stubStream(Flux.just("第一句。", "甲".repeat(140), "预算之后不应继续生成。")
+        .doOnCancel(() -> cancelled.set(true)));
+    List<String> sentences = new ArrayList<>();
+
+    var result = service.chatStreamSentences(
+        "请介绍项目", null, sentences::add, session, List.of());
+
+    assertThat(cancelled).isTrue();
+    assertThat(result.content()).hasSize(120).endsWith("…");
+    assertThat(String.join("", sentences)).isEqualTo(result.content());
+  }
+
+  @Test
+  @DisplayName("流式空响应的字幕和播报采用相同的继续提示")
+  void emptyStreamHasConsistentFallback() {
+    stubStream(Flux.empty());
+    List<String> sentences = new ArrayList<>();
+    List<String> subtitles = new ArrayList<>();
+
+    var result = service.chatStreamSentences(
+        "请介绍项目", subtitles::add, sentences::add, session, List.of());
+
+    assertThat(result.content()).isEqualTo("请继续。");
+    assertThat(sentences).containsExactly("请继续。");
+    assertThat(subtitles).containsExactly("请继续。");
+  }
+
+  @Test
+  @DisplayName("部分句子已交给音频链路后聚合失败不重启模型重播")
+  void partialStreamFailureDoesNotReplay() {
+    ChatClient.ChatClientRequestSpec request = stubStream(Flux.concat(
+        Flux.just("已播出的第一句。"), Flux.error(new NoSuchElementException("No value present"))));
+    List<String> sentences = new ArrayList<>();
+
+    var result = service.chatStreamSentences(
+        "请介绍项目", null, sentences::add, session, List.of());
+
+    assertThat(result.success()).isFalse();
+    assertThat(sentences).containsExactly("已播出的第一句。");
+    verify(request, never()).call();
+  }
+
+  @Test
+  @DisplayName("尚未播出时允许聚合兼容降级并补发最终字幕")
+  void emptyAggregationFailureCanFallback() {
+    ChatClient.ChatClientRequestSpec request = stubStream(
+        Flux.error(new NoSuchElementException("No value present")));
+    ChatClient.CallResponseSpec response = mock(ChatClient.CallResponseSpec.class);
+    when(request.call()).thenReturn(response);
+    when(response.content()).thenReturn("降级后的问题？");
+    List<String> sentences = new ArrayList<>();
+    List<String> subtitles = new ArrayList<>();
+
+    var result = service.chatStreamSentences(
+        "请介绍项目", subtitles::add, sentences::add, session, List.of());
+
+    assertThat(result.success()).isTrue();
+    assertThat(result.streaming()).isFalse();
+    assertThat(sentences).containsExactly(result.content());
+    assertThat(subtitles).containsExactly(result.content());
+  }
+
+  private ChatClient.ChatClientRequestSpec stubStream(Flux<String> tokens) {
+    ChatClient client = mock(ChatClient.class);
+    ChatClient.ChatClientRequestSpec request = mock(ChatClient.ChatClientRequestSpec.class);
+    ChatClient.StreamResponseSpec response = mock(ChatClient.StreamResponseSpec.class);
+    when(llmProviderRegistry.getVoiceChatClient("dashscope")).thenReturn(client);
+    when(client.prompt()).thenReturn(request);
+    when(request.system(anyString())).thenReturn(request);
+    when(request.user(anyString())).thenReturn(request);
+    when(request.stream()).thenReturn(response);
+    when(response.content()).thenReturn(tokens);
+    return request;
+  }
+}

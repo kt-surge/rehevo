@@ -1,0 +1,10 @@
+package interview.guide.modules.knowledgebase.service;
+
+public enum EvidenceAssessmentReason {
+    NO_CANDIDATE,
+    UNSUPPORTED_NUMERIC_CONSTRAINT,
+    UNSUPPORTED_CONFIGURATION_ASSERTION,
+    UNSUPPORTED_OPERATIONAL_ASSERTION,
+    UNSUPPORTED_ABSOLUTE_ASSERTION,
+    CANDIDATE_EVIDENCE
+}

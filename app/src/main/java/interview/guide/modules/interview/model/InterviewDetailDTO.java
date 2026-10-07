@@ -14,12 +14,19 @@ public record InterviewDetailDTO(
     String evaluateStatus,
     String evaluateError,
     Integer overallScore,
+    Integer answeredQuestions,
+    Integer scoredQuestions,
+    Integer failedQuestions,
+    Integer evidenceSupportedQuestions,
+    Double evaluationCoverage,
+    Double evidenceCoverage,
     String overallFeedback,
     LocalDateTime createdAt,
     LocalDateTime completedAt,
     List<Object> questions,
     List<String> strengths,
     List<String> improvements,
+    List<Object> trainingTasks,
     List<Object> referenceAnswers,
     List<AnswerDetailDTO> answers
 ) {
@@ -33,9 +40,14 @@ public record InterviewDetailDTO(
         String userAnswer,
         Integer score,
         String feedback,
+        String evaluationStatus,
+        Integer rubricLevel,
+        List<String> answerEvidence,
+        List<String> missingPoints,
+        List<String> factualRisks,
+        String nextAction,
         String referenceAnswer,
         List<String> keyPoints,
         LocalDateTime answeredAt
     ) {}
 }
-

@@ -1,0 +1,132 @@
+package interview.guide.modules.voiceinterview.service;
+
+import java.util.function.Consumer;
+
+/** 单个语音轮次的文本预算和断句状态，不跨线程或轮次共享。 */
+final class VoiceTextAccumulator {
+
+  private static final String TERMINAL_PUNCTUATION = "。！？；!?;.";
+
+  private final int maxChars;
+  private final Consumer<String> onSentence;
+  private final StringBuilder raw = new StringBuilder();
+  private String content = "";
+  private int emittedEnd;
+  private int emittedSentenceCount;
+  private boolean budgetReached;
+  private boolean finished;
+
+  VoiceTextAccumulator(int maxChars, Consumer<String> onSentence) {
+    this.maxChars = Math.max(2, maxChars);
+    this.onSentence = onSentence;
+  }
+
+  void append(String token) {
+    if (finished || budgetReached || token == null || token.isEmpty()) {
+      return;
+    }
+    raw.append(token);
+    content = normalize(raw.toString());
+    if (content.length() > maxChars) {
+      content = content.substring(0, safeEnd(content, maxChars - 1)) + "…";
+      budgetReached = true;
+    }
+    drainCompleteSentences();
+  }
+
+  String preview() {
+    // 留出截断标记的位置，不能先播出/展示预算边界上随后需要替换的字符。
+    int end = finished || budgetReached
+        ? content.length() : safeEnd(content, Math.min(content.length(), maxChars - 1));
+    return content.substring(0, end);
+  }
+
+  String finish() {
+    if (finished) {
+      return content;
+    }
+    finished = true;
+    if (content.isBlank()) {
+      content = "请继续。";
+    }
+    drainCompleteSentences();
+    emitThrough(content.length());
+    return content;
+  }
+
+  boolean isBudgetReached() {
+    return budgetReached;
+  }
+
+  boolean hasEmittedSentence() {
+    return emittedSentenceCount > 0;
+  }
+
+  private void drainCompleteSentences() {
+    int limit = finished || budgetReached
+        ? content.length() : safeEnd(content, Math.min(content.length(), maxChars - 1));
+    for (int index = emittedEnd; index < limit; index++) {
+      if (!isTerminal(index)) {
+        continue;
+      }
+      int end = index + 1;
+      while (end < limit && TERMINAL_PUNCTUATION.indexOf(content.charAt(end)) >= 0) {
+        end++;
+      }
+      emitThrough(end);
+      index = end - 1;
+    }
+  }
+
+  private boolean isTerminal(int index) {
+    char value = content.charAt(index);
+    if (TERMINAL_PUNCTUATION.indexOf(value) < 0) {
+      return false;
+    }
+    if (value != '.') {
+      return true;
+    }
+    if (index + 1 == content.length() && !finished && !budgetReached) {
+      return false;
+    }
+    return !(index > 0 && index + 1 < content.length()
+        && isIdentifierChar(content.charAt(index - 1))
+        && isIdentifierChar(content.charAt(index + 1)));
+  }
+
+  private void emitThrough(int end) {
+    if (onSentence == null || end <= emittedEnd) {
+      return;
+    }
+    String sentence = content.substring(emittedEnd, end);
+    emittedEnd = end;
+    if (!sentence.isBlank()) {
+      // 回调可能先提交音频任务再失败；此时不能重启整个模型并重复播报。
+      emittedSentenceCount++;
+      onSentence.accept(sentence);
+    }
+  }
+
+  private static boolean isIdentifierChar(char value) {
+    return value >= '0' && value <= '9' || value >= 'a' && value <= 'z'
+        || value >= 'A' && value <= 'Z' || value == '_';
+  }
+
+  private static int safeEnd(String value, int end) {
+    if (end > 0 && end < value.length()
+        && Character.isHighSurrogate(value.charAt(end - 1))
+        && Character.isLowSurrogate(value.charAt(end))) {
+      return end - 1;
+    }
+    return end;
+  }
+
+  private static String normalize(String value) {
+    return value.replace("**", "")
+        .replace("```", "")
+        .replace("`", "")
+        .replaceAll("(?m)^\\s*[-*+]\\s*", "")
+        .replaceAll("\\s+", " ")
+        .trim();
+  }
+}

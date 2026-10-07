@@ -1,0 +1,67 @@
+{
+  "verifiedAt": "2026-10-05T13:07:29.425434+00:00",
+  "method": "independent SHA-256 recomputation",
+  "runs": [
+    {
+      "run": "training-history-baseline-20261005-r1",
+      "files": 5,
+      "mismatches": []
+    },
+    {
+      "run": "training-history-candidate-20261005-r1",
+      "files": 97,
+      "mismatches": []
+    },
+    {
+      "run": "training-history-product-20261005-r1",
+      "files": 95,
+      "mismatches": []
+    },
+    {
+      "run": "evaluation-grounding-baseline-20261005-r1",
+      "files": 11,
+      "mismatches": []
+    },
+    {
+      "run": "evaluation-grounding-candidate-20261005-r1",
+      "files": 91,
+      "mismatches": []
+    },
+    {
+      "run": "evaluation-grounding-candidate-20261005-r2",
+      "files": 131,
+      "mismatches": []
+    },
+    {
+      "run": "evaluation-grounding-live-baseline-20261005-r1",
+      "files": 71,
+      "mismatches": []
+    },
+    {
+      "run": "evaluation-grounding-live-candidate-20261005-r1",
+      "files": 58,
+      "mismatches": []
+    },
+    {
+      "run": "structured-retry-baseline-20261005-r1",
+      "files": 6,
+      "mismatches": []
+    },
+    {
+      "run": "structured-retry-baseline-20261005-r2",
+      "files": 7,
+      "mismatches": []
+    },
+    {
+      "run": "structured-retry-baseline-20261005-r3",
+      "files": 7,
+      "mismatches": []
+    },
+    {
+      "run": "structured-retry-candidate-20261005-r1",
+      "files": 103,
+      "mismatches": []
+    }
+  ],
+  "totalFiles": 682
+}

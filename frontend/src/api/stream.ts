@@ -12,6 +12,8 @@ interface StreamSseOptions {
   trimDataPrefixSpace?: boolean;
   unescapeEscapedNewlines?: boolean;
   dataJoiner?: string;
+  /** 有此回调时严格按空行事件边界解析，原始 JSON 不经过正文反转义。 */
+  onEvent?: (name: string, data: string) => void;
 }
 
 function toApiUrl(url: string): string {
@@ -194,7 +196,7 @@ function processEventBlock(block: string, options: StreamSseOptions): void {
 
     const content = readDataLine(line, options.trimDataPrefixSpace ?? false);
     if (content !== null) {
-      dataParts.push(content);
+      dataParts.push(options.onEvent && content === '\n' ? '' : content);
     }
   }
 
@@ -203,6 +205,10 @@ function processEventBlock(block: string, options: StreamSseOptions): void {
   }
 
   const content = dataParts.join(options.dataJoiner ?? '\n');
+  if (options.onEvent) {
+    options.onEvent(eventName ?? 'message', content);
+    return;
+  }
   if (eventName?.toLowerCase() === 'error') {
     const parsed = parseJsonObject(content);
     const businessError = parsed ? getBusinessEventError(parsed) : null;
@@ -213,7 +219,10 @@ function processEventBlock(block: string, options: StreamSseOptions): void {
 }
 
 function flushEventBuffer(buffer: string, done: boolean, options: StreamSseOptions): string {
-  let remaining = buffer.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  // 保留网络块末尾的 CR，下一块可能从 LF 开始。
+  const trailingCr = !done && buffer.endsWith('\r');
+  let remaining = (trailingCr ? buffer.slice(0, -1) : buffer)
+    .replace(/\r\n/g, '\n').replace(/\r/g, '\n') + (trailingCr ? '\r' : '');
   let separatorIndex = remaining.indexOf('\n\n');
 
   while (separatorIndex !== -1) {
@@ -223,7 +232,7 @@ function flushEventBuffer(buffer: string, done: boolean, options: StreamSseOptio
     separatorIndex = remaining.indexOf('\n\n');
   }
 
-  if (!done) {
+  if (!done && !options.onEvent) {
     const singleLineIndex = remaining.indexOf('\n');
     if (singleLineIndex !== -1 && remaining.substring(0, singleLineIndex).startsWith('data:')) {
       processEventBlock(remaining.substring(0, singleLineIndex), options);
@@ -232,7 +241,8 @@ function flushEventBuffer(buffer: string, done: boolean, options: StreamSseOptio
   }
 
   if (done && remaining.trim()) {
-    processEventBlock(remaining, options);
+    // 新协议不接受尚无空行结束的半个事件，避免截断 terminal 被认作成功。
+    if (!options.onEvent) processEventBlock(remaining, options);
     return '';
   }
 
@@ -253,11 +263,13 @@ async function readStream(response: Response, options: StreamSseOptions): Promis
 
   const decoder = new TextDecoder();
   let buffer = '';
-
-  while (true) {
+  let ended = false;
+  try {
+    while (true) {
     const { done, value } = await reader.read();
 
     if (done) {
+      ended = true;
       buffer += decoder.decode();
       flushBuffer(buffer, true, options);
       return;
@@ -265,6 +277,16 @@ async function readStream(response: Response, options: StreamSseOptions): Promis
 
     buffer += decoder.decode(value, { stream: true });
     buffer = flushBuffer(buffer, false, options);
+    }
+  } finally {
+    if (!ended) {
+      try {
+        await reader.cancel();
+      } catch (error) {
+        if (!options.init.signal?.aborted) console.warn('释放响应流失败', error);
+      }
+    }
+    reader.releaseLock();
   }
 }
 

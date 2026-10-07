@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="基础行为" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.753Z" hostname="LAPTOP-BT5MEUFJ" time="0.059">
+  <properties/>
+  <testcase name="maskApiKey 返回脱敏值" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$BasicBehavior" time="0.011"/>
+  <testcase name="getProvider 对未知 provider 抛出异常" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$BasicBehavior" time="0.011"/>
+  <testcase name="listProviders 在 providers 为空时返回空列表" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$BasicBehavior" time="0.012"/>
+  <testcase name="测试连接请求体不再强制携带 temperature" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$BasicBehavior" time="0.012"/>
+  <testcase name="GLM base-url 测试连接不应重复拼接 /v1" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$BasicBehavior" time="0.012"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

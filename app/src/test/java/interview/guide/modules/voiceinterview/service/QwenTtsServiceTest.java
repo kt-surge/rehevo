@@ -1,6 +1,8 @@
 package interview.guide.modules.voiceinterview.service;
 
 import interview.guide.modules.voiceinterview.config.VoiceInterviewProperties;
+import interview.guide.common.exception.BusinessException;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -35,6 +37,13 @@ class QwenTtsServiceTest {
         assertDoesNotThrow(() -> ttsService.init());
     }
 
+  @Test
+  @DisplayName("帧模式拒绝非 24000 采样率，避免音频协议误标")
+  void rejectsIncompatibleFrameSampleRate() {
+    assertThrows(BusinessException.class,
+        () -> ttsService.prepareFrames("测试文本", Duration.ofSeconds(1), pcm -> { }));
+  }
+
     @Test
     @DisplayName("Should return empty array for empty text")
     void testSynthesizeEmptyText() {
@@ -66,6 +75,25 @@ class QwenTtsServiceTest {
 
         assertNotNull(result);
         assertEquals(0, result.length);
+    }
+
+    @Test
+    @DisplayName("TTS 返回空缓冲区时安全降级为空音频")
+    void copyAudioReturnsEmptyForNullOrEmptyBuffer() {
+        assertArrayEquals(new byte[0], QwenTtsService.copyAudio(null));
+        assertArrayEquals(new byte[0], QwenTtsService.copyAudio(java.nio.ByteBuffer.allocate(0)));
+    }
+
+    @Test
+    @DisplayName("复制音频时不改变调用方缓冲区的读取位置")
+    void copyAudioPreservesCallerBufferPosition() {
+        java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(new byte[] {1, 2, 3});
+        buffer.position(1);
+
+        byte[] copied = QwenTtsService.copyAudio(buffer);
+
+        assertArrayEquals(new byte[] {2, 3}, copied);
+        assertEquals(1, buffer.position());
     }
 
     @Test

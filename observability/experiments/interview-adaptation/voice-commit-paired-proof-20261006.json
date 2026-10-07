@@ -1,0 +1,16 @@
+{
+  "runs": [
+    "business-persistence-voice-baseline-20261006-r1",
+    "business-persistence-voice-candidate-20261006-r1",
+    "business-persistence-voice-full-20261006-r1",
+    "voice-empty-live-baseline-20261006-r1",
+    "voice-empty-live-candidate-20261006-r1"
+  ],
+  "sixH2ScenariosIdentical": true,
+  "liveInputIdentical": true,
+  "liveInputSha256": "7693053f4b9c175548cc78a474255c776a98e0a8fd4a04833e2a2bdd6d893b8d",
+  "testedSourcesStillCurrent": true,
+  "testedSources": 17,
+  "externalModelCalls": 0,
+  "restoredDataScope": true
+}

@@ -15,7 +15,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class WebSocketControlMessage {
     private String type; // "control"
-    private String action; // "start_phase", "end_phase", "end_interview", "submit"
+    private String action; // "start_phase", "end_phase", "end_interview", "submit", "cancel"
     private String phase; // "INTRO", "TECH", "PROJECT", "HR"
     private Map<String, Object> data;
 }

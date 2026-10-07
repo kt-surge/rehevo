@@ -8,6 +8,9 @@ import com.alibaba.dashscope.common.Status;
 import com.alibaba.dashscope.utils.Constants;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import interview.guide.common.exception.BusinessException;
+import interview.guide.common.exception.ErrorCode;
+import interview.guide.modules.voiceinterview.turn.AsrTranscriptSegment;
 import interview.guide.modules.voiceinterview.config.VoiceInterviewProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,10 +20,12 @@ import jakarta.annotation.PreDestroy;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -32,22 +37,22 @@ import java.util.function.Consumer;
  *
  * Key Features:
  * - Multi-session management with thread-safe concurrent map
- * - Server-side VAD with 400ms silence duration for automatic sentence detection
+ * - Streaming sentence segmentation with a configurable silence duration
  * - Callback-based result handling for real-time transcription updates
  * - Automatic resource cleanup on session termination
  *
  * Configuration:
- * - Model: qwen-audio-3.0-asr-flash-streaming
+ * - Model: supplied by VoiceInterviewProperties
  * - Audio format: PCM, 16kHz sample rate
  * - Language: Chinese (zh)
- * - VAD: Enabled with server_vad type
+ * - Streaming silence parameter: max_sentence_silence
  *
  * @see Recognition
  * @see ResultCallback
  */
 @Slf4j
 @Service
-public class QwenAsrService {
+public class QwenAsrService implements VoiceAsrClient {
 
     // Runtime configuration values (loaded from VoiceInterviewProperties; setters kept for tests)
     private String url;
@@ -226,17 +231,10 @@ public class QwenAsrService {
             if (url != null && !url.isBlank()) {
                 Constants.baseWebsocketApiUrl = url;
             }
-            RecognitionParam.RecognitionParamBuilder<?, ?> paramBuilder = RecognitionParam.builder()
-                    .model(model)
-                    .apiKey(apiKey)
-                    .format(format)
-                    .sampleRate(sampleRate);
-            if (language != null && !language.isBlank()) {
-                paramBuilder.parameter("language_hints", List.of(language));
-            }
-            RecognitionParam param = paramBuilder.build();
-            Recognition recognizer = new Recognition();
+            RecognitionParam param = buildRecognitionParam();
+            Recognition recognizer = createRecognizer();
             final AtomicReference<Recognition> recognizerRef = new AtomicReference<>(recognizer);
+            String recognitionId = UUID.randomUUID().toString();
 
             ResultCallback<RecognitionResult> callback = new ResultCallback<>() {
                 @Override
@@ -246,6 +244,10 @@ public class QwenAsrService {
 
                 @Override
                 public void onEvent(RecognitionResult result) {
+                    AsrSession current = sessions.get(sessionId);
+                    if (current == null || current.getRecognizer() != recognizerRef.get()) {
+                        return;
+                    }
                     if (result == null || result.getSentence() == null) {
                         return;
                     }
@@ -254,9 +256,9 @@ public class QwenAsrService {
                         return;
                     }
                     if (result.isSentenceEnd()) {
-                        onFinal.accept(text);
+                        dispatchSegment(onFinal, recognitionId, result);
                     } else if (onPartial != null) {
-                        onPartial.accept(text);
+                        dispatchSegment(onPartial, recognitionId, result);
                     }
                 }
 
@@ -264,23 +266,17 @@ public class QwenAsrService {
                 public void onComplete() {
                     Recognition completed = recognizerRef.get();
                     log.debug("[Session: {}] ASR stream completed", sessionId);
-                    sessions.compute(sessionId, (id, existing) -> {
-                        if (existing != null && existing.getRecognizer() == completed) {
-                            return null;
-                        }
-                        return existing;
-                    });
+                    if (removeCurrentRecognizer(sessionId, completed)) {
+                        onError.accept(new IllegalStateException("ASR stream ended"));
+                    }
                 }
 
                 @Override
                 public void onError(Exception error) {
                     Recognition failed = recognizerRef.get();
-                    sessions.compute(sessionId, (id, existing) -> {
-                        if (existing != null && existing.getRecognizer() == failed) {
-                            return null;
-                        }
-                        return existing;
-                    });
+                    if (!removeCurrentRecognizer(sessionId, failed)) {
+                        return;
+                    }
                     log.error("[Session: {}] DashScope ASR failed", sessionId, error);
                     onError.accept(error);
                 }
@@ -308,18 +304,18 @@ public class QwenAsrService {
 
                 } catch (Exception e) {
                     log.error("[Session: {}] Failed to establish connection", sessionId, e);
-                    sessions.compute(sessionId, (id, existing) -> {
-                        if (existing != null && existing.getRecognizer() == recognizer) {
-                            return null;
-                        }
-                        return existing;
-                    });
-                    onError.accept(e);
+                    if (removeCurrentRecognizer(sessionId, recognizer)) {
+                        onError.accept(e);
+                    }
                 }
             }, "ASR-Connection-" + sessionId);
             connectionThread.setDaemon(true);
             connectionThread.start();
 
+        } catch (BusinessException e) {
+            log.error("[Session: {}] Invalid ASR configuration", sessionId, e);
+            onError.accept(e);
+            throw e;
         } catch (Exception e) {
             String errorMsg = "Failed to create transcription session: " + sessionId;
             log.error(errorMsg, e);
@@ -327,6 +323,49 @@ public class QwenAsrService {
             onError.accept(new IllegalStateException(errorMsg, e));
             throw new IllegalStateException(errorMsg, e);
         }
+    }
+
+    Recognition createRecognizer() {
+      return new Recognition();
+    }
+
+  private RecognitionParam buildRecognitionParam() {
+    RecognitionParam.RecognitionParamBuilder<?, ?> builder = RecognitionParam.builder()
+        .model(model).apiKey(apiKey).format(format).sampleRate(sampleRate);
+    if (language != null && !language.isBlank()) {
+      builder.parameter("language_hints", List.of(language));
+    }
+    // Recognition uses the Streaming dialect, not realtime session.turn_detection.
+    if (Boolean.TRUE.equals(enableTurnDetection)) {
+      if (turnDetectionSilenceDurationMs == null || turnDetectionSilenceDurationMs < 200
+          || turnDetectionSilenceDurationMs > 6000) {
+        throw new BusinessException(ErrorCode.BAD_REQUEST, "ASR 静音阈值必须在 200–6000ms 之间");
+      }
+      builder.parameter("max_sentence_silence", turnDetectionSilenceDurationMs);
+    }
+    return builder.build();
+  }
+
+  private static void dispatchSegment(Consumer<String> consumer, String recognitionId,
+      RecognitionResult result) {
+    if (consumer instanceof VoiceAsrSegmentConsumer segmented) {
+      segmented.acceptSegment(new AsrTranscriptSegment(recognitionId,
+          result.getSentence().getSentenceId(), result.getSentence().getText()));
+    } else {
+      consumer.accept(result.getSentence().getText());
+    }
+  }
+
+    private boolean removeCurrentRecognizer(String sessionId, Recognition recognizer) {
+      AtomicBoolean removed = new AtomicBoolean();
+      sessions.compute(sessionId, (id, existing) -> {
+        if (existing != null && existing.getRecognizer() == recognizer) {
+          removed.set(true);
+          return null;
+        }
+        return existing;
+      });
+      return removed.get();
     }
 
     /**

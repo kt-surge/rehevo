@@ -1,0 +1,295 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="语音 Handler Fake Provider 故障实验" tests="11" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.846Z" hostname="LAPTOP-BT5MEUFJ" time="6.041">
+  <properties/>
+  <testcase name="Fake TTS 迟到返回时，取消后的旧音频不会写出" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.297"/>
+  <testcase name="Fake ASR append 断连后会重连并重投当前音频帧" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.092"/>
+  <testcase name="20 次 Fake LLM 取消均返回带 Turn 元数据的确认，P95 小于 200ms" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.12"/>
+  <testcase name="部分LLM流失败进入唯一失败终态，迟到TTS不发送音频" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.176"/>
+  <testcase name="仅匹配当前取消请求号的浏览器确认会记录一次客户端往返时延" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.007"/>
+  <testcase name="Fake TTS 乱序完成时，流式音频仍按句子序号发送" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.023"/>
+  <testcase name="Fake TTS 返回空音频时不发送 audio，Turn 仍可结束" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.027"/>
+  <testcase name="Fake LLM 迟到 token 与 sentence 在取消后均不会写出或触发 TTS" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.11"/>
+  <testcase name="开场题也有可取消 Turn，取消后不发送迟到音频且记录浏览器确认" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.11"/>
+  <testcase name="起播上报绑定提交和轮次，拒绝早报、错配、重复与过期样本" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="0.047"/>
+  <testcase name="Fake TTS 超时后 Turn 可结束且不发送半成品音频" classname="interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandlerFakeProviderTest" time="5.029"/>
+  <system-out><![CDATA[16:50:23.944 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:23.956 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (64 bytes)
+16:50:23.964 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:23.964 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 9)
+16:50:23.973 [virtual-96] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请解释缓存一致性。
+16:50:23.976 [virtual-96] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '这是面试官的追问。'
+16:50:23.981 [virtual-96] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [Session: 1] Starting TTS synthesis for text (length: 9)
+16:50:23.981 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:23.981 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:23.985 [virtual-96] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=non_streaming status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=19
+16:50:24.145 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.147 [Test worker] WARN interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [Session: 1] ASR send failed (ASR append failed: fake disconnect), restarting DashScope and retrying chunk
+16:50:24.238 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.239 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.240 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.240 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.241 [virtual-102] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.243 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.243 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.247 [virtual-102] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.247 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.247 [virtual-102] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=6
+16:50:24.250 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.250 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.250 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.251 [virtual-106] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.251 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.251 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.252 [virtual-106] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.253 [virtual-106] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.253 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.254 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.254 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.255 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.255 [virtual-110] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.256 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.256 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.257 [virtual-110] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.257 [virtual-110] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.258 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.258 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.259 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.259 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.260 [virtual-114] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.260 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.260 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.261 [virtual-114] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.262 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.262 [virtual-114] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.263 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.263 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.263 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.265 [virtual-118] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.265 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.265 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.266 [virtual-118] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.266 [virtual-118] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.267 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.268 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.269 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.269 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.270 [virtual-122] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.270 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.270 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.272 [virtual-122] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.272 [virtual-122] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.272 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.273 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.275 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.275 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.275 [virtual-126] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.275 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.275 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.276 [virtual-126] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.277 [virtual-126] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.277 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.280 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.281 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.281 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.281 [virtual-130] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.282 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.282 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.283 [virtual-130] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.283 [virtual-130] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.284 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.285 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.286 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.286 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.287 [virtual-134] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.287 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.287 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.289 [virtual-134] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.289 [virtual-134] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.290 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.291 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.291 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.292 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.292 [virtual-138] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.293 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.293 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.294 [virtual-138] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.294 [virtual-138] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.294 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.295 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.297 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.297 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.298 [virtual-142] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.298 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.298 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.299 [virtual-142] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.299 [virtual-142] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.300 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.301 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.302 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.302 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.302 [virtual-146] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.302 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.303 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.303 [virtual-146] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.303 [virtual-146] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.305 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.306 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.306 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.306 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.307 [virtual-150] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.308 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.308 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.308 [virtual-150] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.309 [virtual-150] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.309 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.309 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.311 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.311 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.312 [virtual-154] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.312 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.312 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.313 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.313 [virtual-154] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.314 [virtual-154] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=3
+16:50:24.314 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.314 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.314 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.316 [virtual-158] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.316 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.317 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.317 [virtual-158] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.318 [virtual-158] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.328 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.330 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.331 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.331 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.333 [virtual-162] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.333 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.334 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.335 [virtual-162] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.335 [virtual-162] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.336 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.337 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.337 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.337 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.338 [virtual-166] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.338 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.339 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.340 [virtual-166] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.340 [virtual-166] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.340 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.341 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.342 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.342 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.343 [virtual-170] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.343 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.343 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.344 [virtual-170] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.344 [virtual-170] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.345 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.345 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.347 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.347 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.348 [virtual-174] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.348 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.348 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.349 [virtual-174] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.349 [virtual-174] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.350 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.351 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.352 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.352 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.354 [virtual-178] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.354 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.354 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.355 [virtual-178] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.355 [virtual-178] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.359 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.360 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.361 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.361 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.362 [virtual-182] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.365 [virtual-182] WARN interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response failed for session 1: 流式生成失败
+16:50:24.365 [virtual-182] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=failure asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=4
+16:50:24.534 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.535 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.536 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.536 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.537 [virtual-187] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.537 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (84 bytes)
+16:50:24.537 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.538 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (121 bytes)
+16:50:24.538 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel_acknowledged, phase=null
+16:50:24.538 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (121 bytes)
+16:50:24.538 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel_acknowledged, phase=null
+16:50:24.540 [virtual-187] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.540 [virtual-187] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=3
+16:50:24.542 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.544 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (61 bytes)
+16:50:24.544 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.544 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 6)
+16:50:24.545 [virtual-191] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续追问。
+16:50:24.546 [virtual-191] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '第一句。第二句。'
+16:50:24.548 [virtual-191] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=success asrFinalToSubmitMs=0 llmFirstTokenMs=0 firstAudioMs=2 turnDurationMs=3
+16:50:24.565 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.566 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (65 bytes)
+16:50:24.566 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.566 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 10)
+16:50:24.568 [virtual-198] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 缓存一致性如何处理？
+16:50:24.568 [virtual-198] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '这是面试官的追问。'
+16:50:24.569 [virtual-198] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [Session: 1] Starting TTS synthesis for text (length: 9)
+16:50:24.569 [virtual-198] ERROR interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [Session: 1] TTS returned empty audio
+16:50:24.569 [virtual-198] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=non_streaming status=success asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.593 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.594 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (59 bytes)
+16:50:24.594 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.594 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 4)
+16:50:24.596 [virtual-201] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续。
+16:50:24.596 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (36 bytes)
+16:50:24.596 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.597 [virtual-201] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '迟到回复。'
+16:50:24.597 [virtual-201] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=discarded asrFinalToSubmitMs=0 llmFirstTokenMs=-1 firstAudioMs=-1 turnDurationMs=2
+16:50:24.703 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.705 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (85 bytes)
+16:50:24.706 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel, phase=null
+16:50:24.707 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (122 bytes)
+16:50:24.707 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=cancel_acknowledged, phase=null
+16:50:24.707 [virtual-204] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Opening question sent for session 1
+16:50:24.813 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.814 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (95 bytes)
+16:50:24.814 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.814 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 3)
+16:50:24.815 [virtual-207] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续
+16:50:24.815 [virtual-207] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '有效的追问。'
+16:50:24.816 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (207 bytes)
+16:50:24.816 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=playback_observed, phase=null
+16:50:24.818 [virtual-207] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=success asrFinalToSubmitMs=0 llmFirstTokenMs=0 firstAudioMs=3 turnDurationMs=3
+16:50:24.842 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (207 bytes)
+16:50:24.842 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=playback_observed, phase=null
+16:50:24.842 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (211 bytes)
+16:50:24.842 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=playback_observed, phase=null
+16:50:24.842 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (207 bytes)
+16:50:24.842 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=playback_observed, phase=null
+16:50:24.842 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [VoiceClientPlayback] sessionId=1 turnId=turn-1 mode=scheduled_pcm receivedMs=120.5 playbackMs=180.75
+16:50:24.843 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (207 bytes)
+16:50:24.843 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=playback_observed, phase=null
+16:50:24.843 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (58 bytes)
+16:50:24.843 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.843 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 3)
+16:50:24.843 [virtual-210] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 下一轮
+16:50:24.845 [virtual-210] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '有效的追问。'
+16:50:24.846 [virtual-210] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-2 sessionId=1 mode=stream status=success asrFinalToSubmitMs=0 llmFirstTokenMs=0 firstAudioMs=1 turnDurationMs=2
+16:50:24.858 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (207 bytes)
+16:50:24.858 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=playback_observed, phase=null
+16:50:24.859 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- WebSocket connection established for session: 1
+16:50:24.861 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [WebSocket] Received message: sessionId=1, type=control, size=0KB (59 bytes)
+16:50:24.861 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Control message for session 1: action=submit, phase=null
+16:50:24.861 [Test worker] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Merged user utterance for session 1, triggering LLM (length 4)
+16:50:24.862 [virtual-215] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- Getting LLM response for session 1, text: 请继续。
+16:50:24.862 [virtual-215] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- LLM response for session 1: '只有一句。'
+16:50:29.871 [virtual-216] WARN interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [Session: 1] Streaming TTS chunk 0 failed: null
+16:50:29.871 [virtual-215] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- [Session: 1] Streaming TTS produced no chunks, falling back to full-text TTS
+16:50:29.871 [virtual-215] INFO interview.guide.modules.voiceinterview.handler.VoiceInterviewWebSocketHandler -- voice_turn_trace turnId=turn-1 sessionId=1 mode=stream status=success asrFinalToSubmitMs=0 llmFirstTokenMs=0 firstAudioMs=-1 turnDurationMs=5010
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

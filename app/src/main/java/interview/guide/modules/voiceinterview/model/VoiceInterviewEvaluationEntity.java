@@ -35,6 +35,18 @@ public class VoiceInterviewEvaluationEntity {
     @Column(name = "overall_score")
     private Integer overallScore;
 
+    private Integer answeredQuestions;
+
+    private Integer scoredQuestions;
+
+    private Integer failedQuestions;
+
+    private Integer evidenceSupportedQuestions;
+
+    private Double evaluationCoverage;
+
+    private Double evidenceCoverage;
+
     @Column(name = "overall_feedback", columnDefinition = "TEXT")
     private String overallFeedback;
 
@@ -46,6 +58,9 @@ public class VoiceInterviewEvaluationEntity {
 
     @Column(name = "improvements_json", columnDefinition = "TEXT")
     private String improvementsJson;
+
+    @Column(name = "training_tasks_json", columnDefinition = "TEXT")
+    private String trainingTasksJson;
 
     @Column(name = "reference_answers_json", columnDefinition = "TEXT")
     private String referenceAnswersJson;

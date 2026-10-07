@@ -1,0 +1,44 @@
+{
+  "verifiedAt": "2026-10-05T09:04:26.318769+00:00",
+  "algorithm": "SHA-256",
+  "runs": [
+    {
+      "run": "term-judge-calibration-20261005-r1",
+      "files": 18,
+      "mismatches": []
+    },
+    {
+      "run": "term-judge-calibration-20261005-r2",
+      "files": 58,
+      "mismatches": []
+    },
+    {
+      "run": "term-judge-calibration-20261005-r3",
+      "files": 46,
+      "mismatches": []
+    },
+    {
+      "run": "term-judge-calibration-20261005-r4",
+      "files": 84,
+      "mismatches": []
+    },
+    {
+      "run": "term-generation-dev-20261005-r1",
+      "files": 87,
+      "mismatches": []
+    },
+    {
+      "run": "term-generation-dev-20261005-r2",
+      "files": 113,
+      "mismatches": []
+    },
+    {
+      "run": "term-actual-context-20261005-r1",
+      "files": 105,
+      "mismatches": []
+    }
+  ],
+  "totalFiles": 511,
+  "totalMismatches": 0,
+  "scope": "Independent post-seal verification of this 7-run phase; older seals not rewritten."
+}

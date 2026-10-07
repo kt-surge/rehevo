@@ -1,0 +1,18 @@
+{
+  "port": 18080,
+  "appMain": true,
+  "health": {
+    "groups": [
+      "liveness",
+      "readiness"
+    ],
+    "status": "UP"
+  },
+  "manifestWorkspaceMatched": true,
+  "processCreatedAt": "2026-10-05T15:13:48.1893710Z",
+  "processId": 62152,
+  "stopAfterVerify": true,
+  "sdk4490": true,
+  "observedAt": "2026-10-05T15:28:07.4922982Z",
+  "springAi201": true
+}

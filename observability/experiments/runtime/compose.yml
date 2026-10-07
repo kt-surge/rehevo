@@ -1,0 +1,58 @@
+name: rehevo-opt-20261001
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    pull_policy: never
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?missing experiment credential}
+      POSTGRES_DB: rehevo_opt
+    ports:
+      - "127.0.0.1:15439:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    mem_limit: 512m
+    cpus: 2
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "rehevo_opt"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  redis:
+    image: redis:7
+    pull_policy: never
+    ports:
+      - "127.0.0.1:16387:6379"
+    volumes:
+      - redis_data:/data
+    mem_limit: 128m
+    cpus: 1
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  rustfs:
+    image: rustfs/rustfs:latest
+    pull_policy: never
+    command: ["/data"]
+    environment:
+      RUSTFS_ACCESS_KEY: ${RUSTFS_ACCESS_KEY:?missing experiment credential}
+      RUSTFS_SECRET_KEY: ${RUSTFS_SECRET_KEY:?missing experiment credential}
+      RUSTFS_CONSOLE_ENABLE: "true"
+    ports:
+      - "127.0.0.1:19087:9000"
+      - "127.0.0.1:19088:9001"
+    volumes:
+      - rustfs_data:/data
+    mem_limit: 512m
+    cpus: 1
+
+volumes:
+  postgres_data:
+  redis_data:
+  rustfs_data:

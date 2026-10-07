@@ -1,0 +1,42 @@
+{
+  "version": "routing-observer-v1",
+  "scope": "deterministic observer only; not a user-quality or blind evaluation set",
+  "cases": [
+    {
+      "id": "routing-001",
+      "question": "这个呢？",
+      "hasHistory": false,
+      "hasEffectiveHit": true,
+      "evidenceSufficient": true,
+      "expectedAction": "CLARIFY",
+      "expectedReason": "CONTEXT_REFERENCE_WITHOUT_HISTORY"
+    },
+    {
+      "id": "routing-002",
+      "question": "这个呢？",
+      "hasHistory": true,
+      "hasEffectiveHit": true,
+      "evidenceSufficient": true,
+      "expectedAction": "RETRIEVE",
+      "expectedReason": "NORMAL_RETRIEVAL"
+    },
+    {
+      "id": "routing-003",
+      "question": "事务传播机制如何选择？",
+      "hasHistory": false,
+      "hasEffectiveHit": false,
+      "evidenceSufficient": false,
+      "expectedAction": "ABSTAIN",
+      "expectedReason": "NO_RETRIEVAL_EVIDENCE"
+    },
+    {
+      "id": "routing-004",
+      "question": "默认 COUNT 是多少？",
+      "hasHistory": false,
+      "hasEffectiveHit": true,
+      "evidenceSufficient": false,
+      "expectedAction": "ABSTAIN",
+      "expectedReason": "INSUFFICIENT_EVIDENCE"
+    }
+  ]
+}

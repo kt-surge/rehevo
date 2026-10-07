@@ -1,0 +1,76 @@
+{
+  "verifiedAt": "2026-10-05",
+  "runs": [
+    {
+      "run": "application-asr-20261005-r1",
+      "files": 63,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-20261005-r2",
+      "files": 64,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-20261005-r3",
+      "files": 64,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-20261005-r4",
+      "files": 56,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-20261005-r5",
+      "files": 64,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-20261005-r6",
+      "files": 66,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-segmentation-20261005-r1",
+      "files": 90,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-segmentation-20261005-r2",
+      "files": 89,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-identity-20261005-r1",
+      "files": 94,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-asr-identity-20261005-r2",
+      "files": 100,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    }
+  ],
+  "totalFiles": 750,
+  "independentSha256Verification": true,
+  "preSealCopyPreparationFailure": {
+    "error": "KeyError path; source manifest uses original",
+    "actualR6FullSourceFreezeIntact": true,
+    "partialAdditionalCopyPreservedInIdentityR1": true,
+    "noSealedDirectoryModified": true,
+    "providerCalls": 0
+  },
+  "runtimeExceptionBranchFollowupSourceFrozen": "application-asr-identity-20261005-r2/source-manifest.json",
+  "actualAudioRuntimeSourceFrozen": "application-asr-20261005-r6/source/manifest.json"
+}

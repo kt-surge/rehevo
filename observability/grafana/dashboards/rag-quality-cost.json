@@ -2,7 +2,7 @@
   "uid": "rehevo-rag-quality-cost",
   "title": "Rehevo - AI / RAG 质量与成本代理指标",
   "schemaVersion": 41,
-  "version": 1,
+  "version": 2,
   "refresh": "15s",
   "time": {"from": "now-6h", "to": "now"},
   "panels": [
@@ -11,6 +11,8 @@
     {"id": 3, "title": "检索 P95（秒）", "type": "stat", "gridPos": {"h": 8, "w": 6, "x": 12, "y": 0}, "datasource": {"uid": "rehevo-prometheus"}, "targets": [{"expr": "histogram_quantile(0.95, sum(rate(app_rag_retrieval_seconds_bucket[$__rate_interval])) by (le))", "refId": "A"}]},
     {"id": 4, "title": "平均检索命中数", "type": "stat", "gridPos": {"h": 8, "w": 6, "x": 18, "y": 0}, "datasource": {"uid": "rehevo-prometheus"}, "targets": [{"expr": "sum(rate(app_rag_retrieval_hits_sum[$__rate_interval])) / clamp_min(sum(rate(app_rag_retrieval_hits_count[$__rate_interval])), 0.001)", "refId": "A"}]},
     {"id": 5, "title": "检索路径与无结果", "type": "timeseries", "gridPos": {"h": 10, "w": 12, "x": 0, "y": 8}, "datasource": {"uid": "rehevo-prometheus"}, "targets": [{"expr": "sum(rate(app_rag_retrieval_total[$__rate_interval])) by (path, status)", "legendFormat": "检索 {{path}} / {{status}}", "refId": "A"}, {"expr": "sum(rate(app_rag_retrieval_no_hit_total[$__rate_interval])) by (path)", "legendFormat": "无结果 {{path}}", "refId": "B"}]},
-    {"id": 6, "title": "回答与结构化输出失败", "type": "timeseries", "gridPos": {"h": 10, "w": 12, "x": 12, "y": 8}, "datasource": {"uid": "rehevo-prometheus"}, "targets": [{"expr": "sum(rate(app_rag_answer_total[$__rate_interval])) by (status)", "legendFormat": "RAG {{status}}", "refId": "A"}, {"expr": "sum(rate(app_ai_structured_output_invocations_total[$__rate_interval])) by (status)", "legendFormat": "结构化输出 {{status}}", "refId": "B"}]}
+    {"id": 6, "title": "回答与结构化输出失败", "type": "timeseries", "gridPos": {"h": 10, "w": 12, "x": 12, "y": 8}, "datasource": {"uid": "rehevo-prometheus"}, "targets": [{"expr": "sum(rate(app_rag_answer_total[$__rate_interval])) by (status)", "legendFormat": "RAG {{status}}", "refId": "A"}, {"expr": "sum(rate(app_ai_structured_output_invocations_total[$__rate_interval])) by (status)", "legendFormat": "结构化输出 {{status}}", "refId": "B"}]},
+    {"id": 7, "title": "评估报告覆盖率（平均）", "type": "stat", "gridPos": {"h": 8, "w": 6, "x": 0, "y": 18}, "datasource": {"uid": "rehevo-prometheus"}, "targets": [{"expr": "sum(rate(app_interview_evaluation_coverage_sum[$__rate_interval])) / clamp_min(sum(rate(app_interview_evaluation_coverage_count[$__rate_interval])), 0.001)", "refId": "A"}]},
+    {"id": 8, "title": "训练任务归一化（5 分钟）", "type": "timeseries", "gridPos": {"h": 8, "w": 18, "x": 6, "y": 18}, "datasource": {"uid": "rehevo-prometheus"}, "targets": [{"expr": "sum(increase(app_interview_evaluation_training_tasks_raw_total{source=\"model_summary\"}[5m]))", "legendFormat": "模型原始任务", "refId": "A"}, {"expr": "sum(increase(app_interview_evaluation_training_tasks_normalized_total{source=\"model_summary\"}[5m]))", "legendFormat": "归一化任务", "refId": "B"}, {"expr": "sum(increase(app_interview_evaluation_training_tasks_duplicates_collapsed_total{source=\"model_summary\"}[5m]))", "legendFormat": "合并重复项", "refId": "C"}]}
   ]
 }

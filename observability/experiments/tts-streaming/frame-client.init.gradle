@@ -1,0 +1,36 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def experimentDir = new File(gradle.rootProject.projectDir, 'observability/experiments/tts-streaming')
+    def outputClasses = appProject.layout.buildDirectory.dir('tts-frame-client/classes')
+    appProject.tasks.register('compileFrameClientExperiment', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(experimentDir, 'RehevoFrameClientExperiment.java')
+        source new File(experimentDir, 'RehevoFrameCancellationExperiment.java')
+        source new File(experimentDir, 'RehevoOrderedFrameExperiment.java')
+        source new File(experimentDir, 'SdkUsageTap.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = outputClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('frameClientExperiment', JavaExec) {
+        dependsOn 'compileFrameClientExperiment'
+        classpath = appProject.files(outputClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.modules.voiceinterview.service.RehevoFrameClientExperiment'
+        workingDir gradle.rootProject.projectDir
+        args appProject.findProperty('frameOutput'), appProject.findProperty('framePairs') ?: '10', appProject.findProperty('frameSeed') ?: '20261004'
+    }
+    appProject.tasks.register('frameCancellationExperiment', JavaExec) {
+        dependsOn 'compileFrameClientExperiment'
+        classpath = appProject.files(outputClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.modules.voiceinterview.service.RehevoFrameCancellationExperiment'
+        workingDir gradle.rootProject.projectDir
+        args appProject.findProperty('frameOutput')
+    }
+    appProject.tasks.register('orderedFrameExperiment', JavaExec) {
+        dependsOn 'compileFrameClientExperiment'
+        classpath = appProject.files(outputClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.modules.voiceinterview.service.RehevoOrderedFrameExperiment'
+        workingDir gradle.rootProject.projectDir
+        args appProject.findProperty('frameOutput')
+    }
+}

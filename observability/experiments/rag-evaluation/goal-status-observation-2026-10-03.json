@@ -1,0 +1,10 @@
+{
+  "source": "get_goal tool, observed after experiment sealing",
+  "status": "blocked",
+  "objectiveUnchanged": true,
+  "meaningfulWorkCompletedThisTurn": true,
+  "completionNotClaimed": true,
+  "cause": "not returned by tool; do not infer",
+  "assistantCanResumeGoalWithCurrentTools": false,
+  "note": "User continuation authorized this work. Goal activation is controlled by user/system; no new goal, completion or blocked update was issued this turn."
+}

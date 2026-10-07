@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="RAG 结构化路由观察器" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.104Z" hostname="LAPTOP-BT5MEUFJ" time="0.011">
+  <properties/>
+  <testcase name="证据门判为不足时建议拒答" classname="interview.guide.modules.knowledgebase.service.RagRoutingDecisionServiceTest" time="0.002"/>
+  <testcase name="有会话历史的指代问题仍按检索处理" classname="interview.guide.modules.knowledgebase.service.RagRoutingDecisionServiceTest" time="0.0"/>
+  <testcase name="检索无命中时建议拒答" classname="interview.guide.modules.knowledgebase.service.RagRoutingDecisionServiceTest" time="0.0"/>
+  <testcase name="关闭时不计算和记录路由建议" classname="interview.guide.modules.knowledgebase.service.RagRoutingDecisionServiceTest" time="0.0"/>
+  <testcase name="无历史的短指代问题建议澄清但不强制执行" classname="interview.guide.modules.knowledgebase.service.RagRoutingDecisionServiceTest" time="0.0"/>
+  <testcase name="routing-observer-v1 固定样本的建议动作与原因保持可复跑" classname="interview.guide.modules.knowledgebase.service.RagRoutingDecisionServiceTest" time="0.007"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

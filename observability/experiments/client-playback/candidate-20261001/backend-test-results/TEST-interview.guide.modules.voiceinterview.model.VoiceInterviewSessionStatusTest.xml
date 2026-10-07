@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="interview.guide.modules.voiceinterview.model.VoiceInterviewSessionStatusTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:29.887Z" hostname="LAPTOP-BT5MEUFJ" time="0.001">
+  <properties/>
+  <testcase name="shouldHaveExpectedStatusNames()" classname="interview.guide.modules.voiceinterview.model.VoiceInterviewSessionStatusTest" time="0.001"/>
+  <testcase name="shouldHaveFourStatuses()" classname="interview.guide.modules.voiceinterview.model.VoiceInterviewSessionStatusTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

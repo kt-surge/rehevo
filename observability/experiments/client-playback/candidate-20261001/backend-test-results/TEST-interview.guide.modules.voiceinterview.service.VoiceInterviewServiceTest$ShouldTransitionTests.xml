@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="阶段转换判断测试" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.748Z" hostname="LAPTOP-BT5MEUFJ" time="0.01">
+  <properties/>
+  <testcase name="判断转换 - null 阶段不转换" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ShouldTransitionTests" time="0.001"/>
+  <testcase name="判断转换 - 达到建议时长和最小问题数" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ShouldTransitionTests" time="0.002"/>
+  <testcase name="判断转换 - 达到最大问题数" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ShouldTransitionTests" time="0.001"/>
+  <testcase name="判断转换 - 达到最大时长强制转换" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ShouldTransitionTests" time="0.001"/>
+  <testcase name="判断转换 - 未满足条件不转换" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ShouldTransitionTests" time="0.001"/>
+  <testcase name="判断转换 - COMPLETED阶段不应转换" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$ShouldTransitionTests" time="0.002"/>
+  <system-out><![CDATA[16:50:30.751 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Phase PROJECT reached suggested duration 10 with 3 questions, suggesting transition
+16:50:30.753 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Phase TECH reached max questions 8, suggesting transition
+16:50:30.755 [Test worker] INFO interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Phase TECH reached max duration 15 minutes, forcing transition
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

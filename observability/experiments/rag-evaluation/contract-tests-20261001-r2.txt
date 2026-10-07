@@ -1,0 +1,30 @@
+test_agent_review_does_not_satisfy_human_gate (__main__.FactGoldContractTest.test_agent_review_does_not_satisfy_human_gate) ... ok
+test_candidate_hit_and_final_context_are_scored_separately (__main__.FactGoldContractTest.test_candidate_hit_and_final_context_are_scored_separately) ... ok
+test_code_cannot_opt_into_prose_whitespace_policy (__main__.FactGoldContractTest.test_code_cannot_opt_into_prose_whitespace_policy) ... ok
+test_contiguous_chunks_can_jointly_cover_a_fact (__main__.FactGoldContractTest.test_contiguous_chunks_can_jointly_cover_a_fact) ... ok
+test_document_path_must_stay_in_package (__main__.FactGoldContractTest.test_document_path_must_stay_in_package) ... ok
+test_forged_review_type_is_rejected (__main__.FactGoldContractTest.test_forged_review_type_is_rejected) ... ok
+test_gap_between_chunks_is_not_joint_support (__main__.FactGoldContractTest.test_gap_between_chunks_is_not_joint_support) ... ok
+test_macro_and_requirement_micro_denominators_are_explicit (__main__.FactGoldContractTest.test_macro_and_requirement_micro_denominators_are_explicit) ... ok
+test_missing_and_failed_requests_stay_in_denominator (__main__.FactGoldContractTest.test_missing_and_failed_requests_stay_in_denominator) ... ok
+test_missing_condition_is_not_counted_as_complete (__main__.FactGoldContractTest.test_missing_condition_is_not_counted_as_complete) ... ok
+test_non_object_manifest_rows_fail_with_contract_error (__main__.FactGoldContractTest.test_non_object_manifest_rows_fail_with_contract_error) ... ok
+test_reference_facts_must_cover_condition (__main__.FactGoldContractTest.test_reference_facts_must_cover_condition) ... ok
+test_requirement_rank_counts_joint_evidence_and_context_loss (__main__.FactGoldContractTest.test_requirement_rank_counts_joint_evidence_and_context_loss) ... ok
+test_review_timestamp_requires_timezone (__main__.FactGoldContractTest.test_review_timestamp_requires_timezone) ... ok
+test_reviewed_prose_can_bridge_inter_chunk_whitespace (__main__.FactGoldContractTest.test_reviewed_prose_can_bridge_inter_chunk_whitespace) ... ok
+test_source_range_must_match_actual_chunk_text (__main__.FactGoldContractTest.test_source_range_must_match_actual_chunk_text) ... ok
+test_tampered_source_is_rejected (__main__.FactGoldContractTest.test_tampered_source_is_rejected) ... ok
+test_topic_and_source_isolation_prevent_split_leakage (__main__.FactGoldContractTest.test_topic_and_source_isolation_prevent_split_leakage) ... ok
+test_unannotated_literal_fact_keeps_strict_whitespace_requirement (__main__.FactGoldContractTest.test_unannotated_literal_fact_keeps_strict_whitespace_requirement) ... ok
+test_unanswerable_nonempty_retrieval_is_not_refusal_accuracy (__main__.FactGoldContractTest.test_unanswerable_nonempty_retrieval_is_not_refusal_accuracy) ... ok
+test_unknown_chunk_is_rejected (__main__.FactGoldContractTest.test_unknown_chunk_is_rejected) ... ok
+test_valid_contract_accepts_alternative_evidence (__main__.FactGoldContractTest.test_valid_contract_accepts_alternative_evidence) ... ok
+test_whitespace_bridge_cannot_hide_a_missing_condition (__main__.FactGoldContractTest.test_whitespace_bridge_cannot_hide_a_missing_condition) ... ok
+test_whitespace_deleted_within_a_chunk_is_not_bridged (__main__.FactGoldContractTest.test_whitespace_deleted_within_a_chunk_is_not_bridged) ... ok
+test_wrong_quote_is_rejected_even_with_same_document (__main__.FactGoldContractTest.test_wrong_quote_is_rejected_even_with_same_document) ... ok
+
+----------------------------------------------------------------------
+Ran 25 tests in 0.836s
+
+OK

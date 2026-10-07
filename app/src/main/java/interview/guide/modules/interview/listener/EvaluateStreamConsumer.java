@@ -105,17 +105,18 @@ public class EvaluateStreamConsumer extends AbstractStreamConsumer<EvaluateStrea
     }
 
     @Override
-    protected void markProcessing(EvaluatePayload payload) {
+    protected boolean markProcessing(EvaluatePayload payload) {
         updateEvaluateStatus(payload.sessionId(), AsyncTaskStatus.PROCESSING, null);
+        return true;
     }
 
     @Override
-    protected void processBusiness(EvaluatePayload payload) {
+    protected BusinessResult processBusiness(EvaluatePayload payload) {
         String sessionId = payload.sessionId();
         Optional<InterviewSessionEntity> sessionOpt = sessionRepository.findBySessionIdWithResume(sessionId);
         if (sessionOpt.isEmpty()) {
             log.warn("会话已被删除，跳过评估任务: sessionId={}", sessionId);
-            return;
+            return BusinessResult.SKIPPED;
         }
 
         InterviewSessionEntity session = sessionOpt.get();
@@ -140,6 +141,7 @@ public class EvaluateStreamConsumer extends AbstractStreamConsumer<EvaluateStrea
         String resumeText = session.getResume() != null ? session.getResume().getResumeText() : "";
         InterviewReportDTO report = evaluationService.evaluateInterview(chatClient, sessionId, resumeText, questions);
         persistenceService.saveReport(sessionId, report);
+        return BusinessResult.COMPLETED;
     }
 
     @Override
@@ -148,12 +150,13 @@ public class EvaluateStreamConsumer extends AbstractStreamConsumer<EvaluateStrea
     }
 
     @Override
-    protected void markFailed(EvaluatePayload payload, String error) {
+    protected boolean markFailed(EvaluatePayload payload, String error) {
         updateEvaluateStatus(payload.sessionId(), AsyncTaskStatus.FAILED, error);
+        return true;
     }
 
     @Override
-    protected void retryMessage(EvaluatePayload payload, int retryCount) {
+    protected RetryResult retryMessage(EvaluatePayload payload, int retryCount) {
         String sessionId = payload.sessionId();
         try {
             Map<String, String> message = Map.of(
@@ -167,10 +170,12 @@ public class EvaluateStreamConsumer extends AbstractStreamConsumer<EvaluateStrea
                 AsyncTaskStreamConstants.STREAM_MAX_LEN
             );
             log.info("评估任务已重新入队: sessionId={}, retryCount={}", sessionId, retryCount);
+            return RetryResult.ENQUEUED;
 
         } catch (Exception e) {
             log.error("重试入队失败: sessionId={}, error={}", sessionId, e.getMessage(), e);
             updateEvaluateStatus(sessionId, AsyncTaskStatus.FAILED, truncateError("重试入队失败: " + e.getMessage()));
+            return RetryResult.FAILED;
         }
     }
 
@@ -178,16 +183,12 @@ public class EvaluateStreamConsumer extends AbstractStreamConsumer<EvaluateStrea
      * 更新评估状态
      */
     private void updateEvaluateStatus(String sessionId, AsyncTaskStatus status, String error) {
-        try {
-            sessionRepository.findBySessionId(sessionId).ifPresent(session -> {
-                session.setEvaluateStatus(status);
-                session.setEvaluateError(error);
-                sessionRepository.save(session);
-                log.debug("评估状态已更新: sessionId={}, status={}", sessionId, status);
-            });
-        } catch (Exception e) {
-            log.error("更新评估状态失败: sessionId={}, status={}, error={}", sessionId, status, e.getMessage(), e);
-        }
+      sessionRepository.findBySessionId(sessionId).ifPresent(session -> {
+        session.setEvaluateStatus(status);
+        session.setEvaluateError(error);
+        sessionRepository.save(session);
+        log.debug("评估状态已更新: sessionId={}, status={}", sessionId, status);
+      });
     }
 
 }

@@ -1,0 +1,34 @@
+package interview.guide.modules.voiceinterview.dto;
+
+import java.util.Map;
+import java.util.Optional;
+
+/** 客户端同一单调时钟上的计时，来源为浏览器报告，不是服务器独立测量。 */
+public record VoiceClientPlaybackReport(
+    String clientRequestId,
+    String turnId,
+    String playbackMode,
+    double submitToAudioReceivedMs,
+    double submitToPlaybackStartMs) {
+
+  public static Optional<VoiceClientPlaybackReport> from(Map<String, Object> data) {
+    if (data == null
+        || !(data.get("clientRequestId") instanceof String requestId)
+        || !requestId.matches("[A-Za-z0-9-]{8,64}")
+        || !(data.get("turnId") instanceof String turnId) || turnId.length() > 100
+        || turnId.isBlank()
+        || !(data.get("playbackMode") instanceof String mode)
+        || !("scheduled_pcm".equals(mode) || "output_pcm".equals(mode) || "html_playing".equals(mode))
+        || !(data.get("submitToAudioReceivedMs") instanceof Number received)
+        || !(data.get("submitToPlaybackStartMs") instanceof Number playback)) {
+      return Optional.empty();
+    }
+    double receivedMs = received.doubleValue();
+    double playbackMs = playback.doubleValue();
+    if (!Double.isFinite(receivedMs) || !Double.isFinite(playbackMs)
+        || receivedMs < 0 || playbackMs < receivedMs || playbackMs > 120_000) {
+      return Optional.empty();
+    }
+    return Optional.of(new VoiceClientPlaybackReport(requestId, turnId, mode, receivedMs, playbackMs));
+  }
+}

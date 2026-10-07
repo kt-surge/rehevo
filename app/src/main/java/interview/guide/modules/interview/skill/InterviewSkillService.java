@@ -319,7 +319,8 @@ public class InterviewSkillService {
         for (SkillCategoryDTO cat : categories) {
             int count = allocation.getOrDefault(cat.key(), 0);
             if (count > 0) {
-                sb.append("| ").append(cat.label()).append(" | ").append(count).append(" 题 | ").append(cat.priority()).append(" |\n");
+                sb.append("| ").append(cat.key()).append(" | ").append(cat.label())
+                    .append(" | ").append(count).append(" 题 | ").append(cat.priority()).append(" |\n");
             }
         }
         return sb.toString();

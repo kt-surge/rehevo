@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="Redis 缓存测试" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.793Z" hostname="LAPTOP-BT5MEUFJ" time="0.005">
+  <properties/>
+  <testcase name="获取会话 - null ID" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$CacheTests" time="0.001"/>
+  <testcase name="获取会话DTO - 转换正确" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$CacheTests" time="0.001"/>
+  <testcase name="获取会话 - 缓存未命中，查询数据库" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$CacheTests" time="0.002"/>
+  <testcase name="获取会话 - 缓存命中" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$CacheTests" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

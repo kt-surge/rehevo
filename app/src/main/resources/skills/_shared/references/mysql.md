@@ -1,34 +1,19 @@
-# MySQL 面试重点
+# MySQL 面试重点（MySQL 8.4 / InnoDB）
 
-## 索引
-- B+ 树为什么适合磁盘索引（有序、范围查询、叶子链表）。
-- 覆盖索引与回表成本，联合索引最左前缀原则与索引下推。
-- 索引失效场景：函数转换、隐式类型转换、OR、LIKE 前缀通配、非最左列。
-- EXPLAIN 执行计划：type/key/Extra 字段含义，Extra 中 Using filesort/Using temporary。
+## 索引与执行计划
+- B+ 树有序/范围/磁盘访问；覆盖索引/回表、最左前缀、索引下推。
+- 函数/转换、LIKE 前导通配、缺前缀不等于绝不使用索引；OR 可 Index Merge、覆盖扫描另看计划。
+- 前缀列等值时后续列可排序；多个前缀都等值，两种列序均可能支持。低基数在前不必然错；区分能力与成本，用 EXPLAIN 的 type/key/key_len/rows/Extra（filesort/temporary）验证。
 
-## 事务与 MVCC
-- ACID 含义，事务隔离级别（RU/RC/RR/SERIALIZABLE）与各自解决的问题。
-- MySQL 默认 RR，InnoDB 通过 MVCC + Next-Key Lock 解决幻读。
-- MVCC 原理：隐藏列（trx_id/roll_pointer）、Undo Log 版本链、ReadView。
-- 当前读 vs 快照读，RR 下当前读仍加间隙锁。
+## 事务、MVCC 与锁
+- ACID、RU/RC/RR/SERIALIZABLE；默认 RR 普通一致性读为快照，锁定读/写按条件与索引分析。
+- MVCC：trx_id/roll_pointer、Undo 版本链、ReadView。
+- RR 范围/非唯一条件通常涉及 Next-Key/Gap；完整唯一键等值命中现存单行通常 Record Lock。复合键仅部分列、记录不存在另查，不能把所有当前读说成有间隙锁。
+- 表/行锁、Record/Gap/Next-Key、IS/IX 与 S/X 兼容；固定顺序/短事务减少死锁。
 
-## 锁机制
-- 表级锁 vs 行级锁，InnoDB 行锁（Record/Gap/Next-Key）。
-- 意向锁的作用（快速判断表级冲突），IS/IX 与 S/X 的兼容矩阵。
-- 死锁检测与避免：按固定顺序加锁、缩短事务、降低隔离级别。
+## 日志与优化
+- InnoDB/MyISAM 的事务/锁/外键/恢复；Redo（WAL/恢复）、Undo（回滚/MVCC）、Binlog（复制/归档）及两阶段提交。
+- 慢日志/pt-query-digest、垂直/水平拆分/ShardingSphere、游标分页/延迟关联/主键子查询、冷热/读写分离。
+- 追问：SQL 优化、并发锁冲突、主从延迟/一致性。
 
-## 存储引擎与日志
-- InnoDB vs MyISAM：事务、行锁、外键、崩溃恢复。
-- Redo Log（WAL、crash-safe）vs Undo Log（MVCC、回滚）vs Binlog（主从复制、归档）。
-- 两阶段提交保证 Redo Log 与 Binlog 一致性。
-
-## 性能优化
-- 慢 SQL 定位：slow_query_log、pt-query-digest。
-- 分库分表策略：垂直拆分 vs 水平拆分，ShardingSphere 中间件。
-- 深度分页优化：游标分页、延迟关联、子查询先查主键。
-- 数据冷热分离，读写分离架构。
-
-## 面试追问模板
-- 这条 SQL 走了什么索引？能否优化？
-- 高并发写入时，锁冲突怎么解决？
-- 主从延迟怎么处理？数据一致性如何保证？
+依据：MySQL 8.4 官方文档。

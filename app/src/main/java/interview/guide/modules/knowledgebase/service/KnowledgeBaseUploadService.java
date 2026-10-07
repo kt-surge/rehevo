@@ -34,6 +34,7 @@ public class KnowledgeBaseUploadService {
     private final FileValidationService fileValidationService;
     private final FileHashService fileHashService;
     private final VectorizeStreamProducer vectorizeStreamProducer;
+    private final KnowledgeBaseVectorTaskService vectorTasks;
 
     private static final long MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
     
@@ -76,12 +77,16 @@ public class KnowledgeBaseUploadService {
         log.info("知识库已存储到RustFS: {}", fileKey);
 
         // 6. 保存知识库元数据到数据库（状态为 PENDING）
-        KnowledgeBaseEntity savedKb = persistenceService.saveKnowledgeBase(file, name, category, fileKey, fileUrl, fileHash);
+        var input = vectorTasks.prepareInput(content);
+        var accepted = persistenceService.saveKnowledgeBaseAndTask(file, name, category, fileKey, fileUrl, fileHash, input);
+        KnowledgeBaseEntity savedKb = accepted.knowledgeBase();
 
         // 7. 发送向量化任务到 Redis Stream（异步处理）
-        vectorizeStreamProducer.sendVectorizeTask(savedKb.getId(), content);
+        vectorizeStreamProducer.sendAccepted(savedKb.getId(), input, accepted.generation());
 
-        log.info("知识库上传完成，向量化任务已入队: {}, kbId={}", fileName, savedKb.getId());
+        log.info("知识库上传完成，向量化请求已接受: {}, kbId={}", fileName, savedKb.getId());
+        VectorStatus responseStatus = knowledgeBaseRepository.findById(savedKb.getId()).orElseThrow(() ->
+            new BusinessException(ErrorCode.NOT_FOUND, "知识库已删除")).getVectorStatus();
 
         // 8. 返回结果（状态为 PENDING，前端可轮询获取最新状态）
         return Map.of(
@@ -91,7 +96,7 @@ public class KnowledgeBaseUploadService {
                 "category", savedKb.getCategory() != null ? savedKb.getCategory() : "",
                 "fileSize", savedKb.getFileSize(),
                 "contentLength", content.length(),
-                "vectorStatus", VectorStatus.PENDING.name()
+                "vectorStatus", responseStatus.name()
             ),
             "storage", Map.of(
                 "fileKey", fileKey,
@@ -132,13 +137,9 @@ public class KnowledgeBaseUploadService {
             throw new BusinessException(ErrorCode.INTERNAL_ERROR, "无法从文件中提取文本内容");
         }
 
-        // 2. 更新状态为 PENDING（通过单独的 Service 保证事务生效）
-        persistenceService.updateVectorStatusToPending(kbId);
-
-        // 3. 发送向量化任务到 Stream
+        // 2. 生产者先提交新请求版本与 PENDING，再在事务外向 Stream 入队。
         vectorizeStreamProducer.sendVectorizeTask(kbId, content);
 
         log.info("重新向量化任务已发送: kbId={}", kbId);
     }
 }
-

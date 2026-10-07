@@ -7,5 +7,6 @@ public record SubmitAnswerResponse(
     boolean hasNextQuestion,
     InterviewQuestionDTO nextQuestion,
     int currentIndex,
-    int totalQuestions
+    int totalQuestions,
+    LiveFollowUpDecision liveFollowUpDecision
 ) {}

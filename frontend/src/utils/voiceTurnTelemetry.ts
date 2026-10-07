@@ -1,0 +1,57 @@
+import type { VoiceClientPlaybackReport, VoicePlaybackMode } from '../types/voiceTelemetry';
+
+/** 使用同一浏览器单调时钟；开场、未知轮次和取消后事件不形成样本。 */
+export class VoiceTurnTelemetry {
+  private pending: {
+    clientRequestId: string;
+    submittedAt: number;
+    turnId: string | null;
+    receivedAt: number | null;
+    reported: boolean;
+  } | null = null;
+
+  private readonly now: () => number;
+
+  constructor(now: () => number = () => performance.now()) {
+    this.now = now;
+  }
+
+  submit(clientRequestId: string): void {
+    this.pending = { clientRequestId, submittedAt: this.now(), turnId: null, receivedAt: null, reported: false };
+  }
+
+  bindTurn(turnId: string, echoedRequestId?: string): void {
+    if (this.pending && echoedRequestId === this.pending.clientRequestId) {
+      this.pending.turnId = turnId;
+    }
+  }
+
+  receivedAudio(turnId?: string): void {
+    if (this.pending && turnId === this.pending.turnId && this.pending.receivedAt === null) {
+      this.pending.receivedAt = this.now();
+    }
+  }
+
+  playbackStarted(mode: VoicePlaybackMode, observedStartAtMs: number = this.now()): VoiceClientPlaybackReport | null {
+    const pending = this.pending;
+    if (!pending?.turnId || pending.receivedAt === null || pending.reported) {
+      return null;
+    }
+    const received = pending.receivedAt - pending.submittedAt;
+    const playback = observedStartAtMs - pending.submittedAt;
+    if (!Number.isFinite(received) || !Number.isFinite(playback)
+        || received < 0 || playback < received || playback > 120_000 || observedStartAtMs > this.now()) {
+      this.clear();
+      return null;
+    }
+    pending.reported = true;
+    return {
+      clientRequestId: pending.clientRequestId, turnId: pending.turnId, playbackMode: mode,
+      submitToAudioReceivedMs: received, submitToPlaybackStartMs: playback,
+    };
+  }
+
+  clear(): void {
+    this.pending = null;
+  }
+}

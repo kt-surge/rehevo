@@ -1,0 +1,22 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def experimentDir = new File(gradle.rootProject.projectDir, 'observability/experiments/rag-evaluation')
+    def outputClasses = appProject.layout.buildDirectory.dir('rag-identifier-scanner/classes')
+    appProject.tasks.register('compileIdentifierScanner', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(experimentDir, 'IdentifierScannerParity.java')
+        source new File(gradle.rootProject.projectDir, appProject.findProperty('scannerOracle'))
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = outputClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('identifierScanner', JavaExec) {
+        dependsOn 'compileIdentifierScanner'
+        classpath = appProject.files(outputClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.modules.knowledgebase.service.IdentifierScannerParity'
+        workingDir gradle.rootProject.projectDir
+        args appProject.findProperty('scannerInput'), appProject.findProperty('scannerOutput'),
+             appProject.findProperty('scannerOracle'),
+             'app/src/main/java/interview/guide/modules/knowledgebase/service/IdentifierEvidenceSelector.java'
+    }
+}

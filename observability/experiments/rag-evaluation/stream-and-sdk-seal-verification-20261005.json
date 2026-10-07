@@ -1,0 +1,27 @@
+[
+  {
+    "run": "rag-stream-terminal-20261005-r1",
+    "files": 328,
+    "mismatches": []
+  },
+  {
+    "run": "rag-stream-terminal-20261005-r2",
+    "files": 263,
+    "mismatches": []
+  },
+  {
+    "run": "rag-stream-terminal-20261005-r3",
+    "files": 351,
+    "mismatches": []
+  },
+  {
+    "run": "sdk-wire-cancellation-20261005-r1",
+    "files": 218,
+    "mismatches": []
+  },
+  {
+    "run": "sdk-wire-cancellation-20261005-r2",
+    "files": 353,
+    "mismatches": []
+  }
+]

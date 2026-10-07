@@ -155,5 +155,13 @@ class ApiPathResolverTest {
 
       assertThat(client).isNotNull();
     }
+
+    @Test
+    @DisplayName("非正超时回退到安全默认值")
+    void nonPositiveTimeoutFallsBackToDefault() {
+      assertThat(ApiPathResolver.timeoutOrDefault(0, 60000)).isEqualTo(60000);
+      assertThat(ApiPathResolver.timeoutOrDefault(-1, 60000)).isEqualTo(60000);
+      assertThat(ApiPathResolver.timeoutOrDefault(1500, 60000)).isEqualTo(1500);
+    }
   }
 }

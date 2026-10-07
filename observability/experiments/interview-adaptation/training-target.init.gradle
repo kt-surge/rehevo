@@ -1,0 +1,41 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def projectRoot = gradle.rootProject.projectDir
+    def runnerClasses = appProject.layout.buildDirectory.dir('training-target/runner')
+    def baselineClasses = appProject.layout.buildDirectory.dir('training-target/baseline')
+    appProject.tasks.register('compileTrainingTargetStudy', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/interview-adaptation/TrainingTargetStudyMain.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = runnerClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('compileBaselineTrainingTargetStudy', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        def frozen = new File(projectRoot, 'observability/experiments/voice-frame-pipeline/runs/training-target-baseline-20261005-r1')
+        source(['QuestionEvaluationGuide.java', 'InterviewPlan.java', 'InterviewPlanService.java', 'InterviewQuestionService.java']
+            .collect { new File(frozen, it) })
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = baselineClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('trainingTargetStudy', JavaExec) {
+        dependsOn 'compileTrainingTargetStudy'
+        def arm = appProject.findProperty('targetsArm') ?: 'candidate'
+        if (arm == 'baseline') {
+            dependsOn 'compileBaselineTrainingTargetStudy'
+            classpath = appProject.files(new File(projectRoot,
+                'observability/experiments/voice-frame-pipeline/runs/training-target-live-baseline-20261005-r1/override/resources')) + appProject.files(baselineClasses)
+        }
+        classpath += appProject.files(runnerClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.modules.interview.service.TrainingTargetStudyMain'
+        workingDir projectRoot
+        systemProperty 'targets.inputs', appProject.findProperty('targetsInputs')
+        systemProperty 'targets.output', appProject.findProperty('targetsOutput')
+        systemProperty 'targets.arm', appProject.findProperty('targetsArm') ?: 'candidate'
+        args '--server.address=127.0.0.1', '--server.port=0',
+            '--app.voice-interview.opening.warmup-enabled=false',
+            '--app.ai.rag.chunking.mode=TOKEN', '--app.ai.rag.chunking.max-tokens=800',
+            '--app.ai.rag.vector-task.durable-enabled=false'
+    }
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="stripTrailingSlashes" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:12.172Z" hostname="LAPTOP-BT5MEUFJ" time="0.011">
+  <properties/>
+  <testcase name="前后空白被 trim" classname="interview.guide.common.ai.ApiPathResolverTest$StripTrailingSlashes" time="0.006"/>
+  <testcase name="多个尾部斜杠全部移除" classname="interview.guide.common.ai.ApiPathResolverTest$StripTrailingSlashes" time="0.0"/>
+  <testcase name="空串返回空串" classname="interview.guide.common.ai.ApiPathResolverTest$StripTrailingSlashes" time="0.0"/>
+  <testcase name="null 返回空串" classname="interview.guide.common.ai.ApiPathResolverTest$StripTrailingSlashes" time="0.0"/>
+  <testcase name="单个尾部斜杠被移除" classname="interview.guide.common.ai.ApiPathResolverTest$StripTrailingSlashes" time="0.0"/>
+  <testcase name="无尾部斜杠保持不变" classname="interview.guide.common.ai.ApiPathResolverTest$StripTrailingSlashes" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

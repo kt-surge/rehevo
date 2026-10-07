@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="混合检索 RRF 融合测试" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:20.271Z" hostname="LAPTOP-BT5MEUFJ" time="0.015">
+  <properties/>
+  <testcase name="上下文模式在命中段后插入同文档相邻段，并保持候选上限" classname="interview.guide.modules.knowledgebase.service.HybridRetrievalServiceTest" time="0.011"/>
+  <testcase name="RRF 相同分数使用文档ID稳定排序" classname="interview.guide.modules.knowledgebase.service.HybridRetrievalServiceTest" time="0.002"/>
+  <testcase name="两路同时命中的文档应排在仅单路命中的文档之前" classname="interview.guide.modules.knowledgebase.service.HybridRetrievalServiceTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

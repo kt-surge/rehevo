@@ -45,13 +45,29 @@ export interface InterviewItem {
   evaluateStatus?: EvaluateStatus;
   evaluateError?: string;
   overallScore: number | null;
+  answeredQuestions?: number;
+  scoredQuestions?: number;
+  failedQuestions?: number;
+  evidenceSupportedQuestions?: number;
+  evaluationCoverage?: number;
+  evidenceCoverage?: number;
   overallFeedback: string | null;
   createdAt: string;
   completedAt: string | null;
   questions?: unknown[];
   strengths?: string[];
   improvements?: string[];
+  trainingTasks?: TrainingTask[];
   referenceAnswers?: unknown[];
+}
+
+export interface TrainingTask {
+  competency: string;
+  questionIndexes: number[];
+  reason: string;
+  action: string;
+  completionCriteria: string;
+  priority: number;
 }
 
 export interface AnswerItem {
@@ -61,6 +77,12 @@ export interface AnswerItem {
   userAnswer: string;
   score: number;
   feedback: string;
+  evaluationStatus?: 'SCORED' | 'UNANSWERED' | 'EVALUATION_FAILED';
+  rubricLevel?: number;
+  answerEvidence?: string[];
+  missingPoints?: string[];
+  factualRisks?: string[];
+  nextAction?: string;
   referenceAnswer?: string;
   keyPoints?: string[];
   answeredAt: string;

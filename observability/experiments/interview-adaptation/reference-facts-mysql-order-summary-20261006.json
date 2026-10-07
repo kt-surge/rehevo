@@ -1,0 +1,87 @@
+{
+  "reports": {
+    "baseline": {
+      "usage": {
+        "input": 2613.0,
+        "output": 657.0,
+        "total": 3270.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operation counts are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 1,
+        "followUps": 0,
+        "requestedCategory": "MYSQL",
+        "actualType": "MYSQL",
+        "typeMatches": true,
+        "trainingTargetIds": [
+          "training:bb140545-909c-3af8-9841-ddfbcf257e7d"
+        ],
+        "targetIdsValid": true,
+        "rawRubricLevels": 5,
+        "actualReferenceChars": 889,
+        "actualProductSessionWrites": 0,
+        "semanticQualityGate": "HOLD pending separate semantic and fixed-answer scoring review",
+        "scopeUnchanged": true,
+        "formalEffectOrLatency": false
+      },
+      "result": {
+        "status": "finished",
+        "elapsedMs": 20698.3824,
+        "formalEffectOrLatency": false,
+        "invokerOperations": 1
+      }
+    },
+    "candidate": {
+      "usage": {
+        "input": 2849.0,
+        "output": 736.0,
+        "total": 3585.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operation counts are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 1,
+        "followUps": 0,
+        "requestedCategory": "MYSQL",
+        "actualType": "MYSQL",
+        "typeMatches": true,
+        "trainingTargetIds": [
+          "training:bb140545-909c-3af8-9841-ddfbcf257e7d"
+        ],
+        "targetIdsValid": true,
+        "rawRubricLevels": 5,
+        "actualReferenceChars": 1399,
+        "actualProductSessionWrites": 0,
+        "semanticQualityGate": "HOLD pending separate semantic and fixed-answer scoring review",
+        "scopeUnchanged": true,
+        "formalEffectOrLatency": false
+      },
+      "result": {
+        "status": "finished",
+        "elapsedMs": 14387.3536,
+        "formalEffectOrLatency": false,
+        "invokerOperations": 1
+      }
+    }
+  },
+  "integrity": {
+    "inputByteIdentical": true,
+    "promptOutsideReferenceEqual": true,
+    "systemAndSecuritySuffixEqual": true,
+    "onlyActualReferenceSectionDiffers": true,
+    "randomBoundaryAndCrlfOnlyNormalization": true,
+    "case": "mysql-order",
+    "order": "AB",
+    "exposedDevelopmentDiagnostic": true,
+    "noFormalQualityOrLatencyClaim": true
+  }
+}

@@ -1,0 +1,490 @@
+package interview.guide.common.metrics;
+
+import interview.guide.common.constant.AsyncTaskStreamConstants;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tags;
+import io.micrometer.core.instrument.Timer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.lang.Nullable;
+import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.ToDoubleFunction;
+
+/**
+ * 业务指标记录入口。
+ *
+ * <p>这里仅暴露具有固定标签集合的方法。调用方无法把 sessionId、问题、文档名等高基数字段
+ * 写入 Prometheus 标签。</p>
+ */
+@Component
+public class ApplicationMetrics {
+
+  private final MeterRegistry meterRegistry;
+  private final Map<String, Boolean> registeredGauges = new ConcurrentHashMap<>();
+
+  public ApplicationMetrics(@Autowired(required = false) @Nullable MeterRegistry meterRegistry) {
+    this.meterRegistry = meterRegistry;
+  }
+
+  public void recordRagVectorization(long elapsedNanos, int chunks, Outcome outcome) {
+    Tags tags = statusTags(outcome);
+    increment(AppMetricNames.RAG_VECTORIZATION_TOTAL, tags);
+    record(AppMetricNames.RAG_VECTORIZATION, tags, elapsedNanos, TimeUnit.NANOSECONDS);
+    if (meterRegistry != null && outcome == Outcome.SUCCESS) {
+      meterRegistry.summary(AppMetricNames.RAG_VECTORIZATION_CHUNKS, tags).record(Math.max(0, chunks));
+    }
+  }
+
+  public void recordRagRetrieval(long elapsedNanos, RetrievalPath path, int hits, Outcome outcome) {
+    Tags tags = Tags.of(AppMetricNames.TAG_STATUS, outcome.value(), AppMetricNames.TAG_PATH, path.value());
+    increment(AppMetricNames.RAG_RETRIEVAL_TOTAL, tags);
+    record(AppMetricNames.RAG_RETRIEVAL, tags, elapsedNanos, TimeUnit.NANOSECONDS);
+    if (meterRegistry != null && outcome == Outcome.SUCCESS) {
+      meterRegistry.summary(AppMetricNames.RAG_RETRIEVAL_HITS, Tags.of(AppMetricNames.TAG_PATH, path.value()))
+          .record(Math.max(0, hits));
+      if (hits == 0) {
+        increment(AppMetricNames.RAG_RETRIEVAL_NO_HIT, Tags.of(AppMetricNames.TAG_PATH, path.value()));
+      }
+    }
+    if (path == RetrievalPath.FALLBACK) {
+      increment(AppMetricNames.RAG_RETRIEVAL_FALLBACK, statusTags(outcome));
+    }
+  }
+
+  public void recordRagRewrite(Outcome outcome) {
+    increment(AppMetricNames.RAG_QUERY_REWRITE, statusTags(outcome));
+  }
+
+  public void recordRagRetrievalStage(RetrievalStage stage, long elapsedNanos, int candidates, Outcome outcome) {
+    Tags tags = Tags.of(AppMetricNames.TAG_STAGE, stage.value(), AppMetricNames.TAG_STATUS, outcome.value());
+    increment(AppMetricNames.RAG_RETRIEVAL_STAGE_TOTAL, tags);
+    record(AppMetricNames.RAG_RETRIEVAL_STAGE, tags, elapsedNanos, TimeUnit.NANOSECONDS);
+    if (meterRegistry != null && outcome == Outcome.SUCCESS) {
+      meterRegistry.summary(AppMetricNames.RAG_RETRIEVAL_STAGE_CANDIDATES,
+          Tags.of(AppMetricNames.TAG_STAGE, stage.value())).record(Math.max(0, candidates));
+    }
+  }
+
+  public void recordRagAnswer(long elapsedNanos, Interaction interaction, Outcome outcome) {
+    Tags tags = Tags.of(AppMetricNames.TAG_STATUS, outcome.value(), AppMetricNames.TAG_INTERACTION, interaction.value());
+    increment(AppMetricNames.RAG_ANSWER_TOTAL, tags);
+    record(AppMetricNames.RAG_ANSWER, tags, elapsedNanos, TimeUnit.NANOSECONDS);
+  }
+
+  public void recordRagEvidenceGate(Outcome outcome) {
+    increment(AppMetricNames.RAG_EVIDENCE_GATE, statusTags(outcome));
+  }
+
+  /** 仅记录固定路由动作，禁止把问题内容或会话标识写入指标标签。 */
+  public void recordRagRouting(String action) {
+    String normalized = switch (action) {
+      case "retrieve", "clarify", "abstain" -> action;
+      default -> "invalid";
+    };
+    increment(AppMetricNames.RAG_ROUTING, Tags.of(AppMetricNames.TAG_STATUS, normalized));
+  }
+
+  public void recordInterviewEvaluation(
+      int answered, int scored, int failed, int evidenceSupported,
+      double coverage, double evidenceCoverage) {
+    String status = answered == 0 ? "empty" : failed == 0 ? "complete" : "partial";
+    Tags tags = Tags.of(AppMetricNames.TAG_STATUS, status);
+    increment(AppMetricNames.INTERVIEW_EVALUATION_REPORTS, tags);
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_ANSWERED, Math.max(0, answered));
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_SCORED, Math.max(0, scored));
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_FAILED, Math.max(0, failed));
+    incrementBy(
+        AppMetricNames.INTERVIEW_EVALUATION_EVIDENCE_SUPPORTED,
+        Math.max(0, evidenceSupported));
+    if (meterRegistry != null) {
+      meterRegistry.summary(AppMetricNames.INTERVIEW_EVALUATION_COVERAGE, tags)
+          .record(Math.max(0.0, Math.min(1.0, coverage)));
+      meterRegistry.summary(AppMetricNames.INTERVIEW_EVALUATION_EVIDENCE_COVERAGE, tags)
+          .record(Math.max(0.0, Math.min(1.0, evidenceCoverage)));
+    }
+  }
+
+  public void recordInterviewEvaluationItemRetry(Outcome outcome) {
+    increment(AppMetricNames.INTERVIEW_EVALUATION_ITEM_RETRY, statusTags(outcome));
+  }
+
+  public void recordInterviewEvaluationBatch(long elapsedNanos, Outcome outcome) {
+    Tags tags = statusTags(outcome);
+    increment(AppMetricNames.INTERVIEW_EVALUATION_BATCH_TOTAL, tags);
+    record(AppMetricNames.INTERVIEW_EVALUATION_BATCH, tags, elapsedNanos, TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * 只记录低基数的模型汇总任务归一化数量；不记录能力点、题号或会话 ID，避免把用户数据带入标签。
+   */
+  public void recordInterviewModelTrainingTaskNormalization(int rawTasks, int normalizedTasks) {
+    Tags tags = Tags.of(AppMetricNames.TAG_SOURCE, "model_summary");
+    int safeRaw = Math.max(0, rawTasks);
+    int safeNormalized = Math.max(0, normalizedTasks);
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_TRAINING_TASKS_RAW, safeRaw, tags);
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_TRAINING_TASKS_NORMALIZED, safeNormalized, tags);
+    incrementBy(AppMetricNames.INTERVIEW_EVALUATION_TRAINING_TASK_DUPLICATES_COLLAPSED,
+        Math.max(0, safeRaw - safeNormalized), tags);
+  }
+
+  public void recordInterviewLiveFollowUp(String action, boolean relevant, boolean duplicate) {
+    increment(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP,
+        Tags.of(AppMetricNames.TAG_STATUS, action));
+    if (meterRegistry != null && !"not_applicable".equals(action)) {
+      meterRegistry.summary(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP_RELEVANCE)
+          .record(relevant ? 1.0 : 0.0);
+      if (duplicate) {
+        increment(AppMetricNames.INTERVIEW_LIVE_FOLLOW_UP_DUPLICATE,
+            statusTags(Outcome.FAILURE));
+      }
+    }
+  }
+
+  public void recordInterviewPlan(int mainQuestions, int competencies, int requestedFocusCompetencies,
+                                  int prioritizedCompetencies, double retestCoverage, double competencyCoverage) {
+    String status = mainQuestions == 0 ? "empty" : competencyCoverage >= 1.0 ? "complete" : "partial";
+    Tags tags = Tags.of(AppMetricNames.TAG_STATUS, status);
+    increment(AppMetricNames.INTERVIEW_PLAN_TOTAL, tags);
+    if (meterRegistry != null) {
+      meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_COMPETENCY_COVERAGE, tags)
+          .record(Math.max(0.0, Math.min(1.0, competencyCoverage)));
+      meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_COMPETENCIES, tags)
+          .record(Math.max(0, competencies));
+      meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_HISTORY_FOCUS_COMPETENCIES, tags)
+          .record(Math.max(0, requestedFocusCompetencies));
+      meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_PRIORITIZED_COMPETENCIES, tags)
+          .record(Math.max(0, prioritizedCompetencies));
+      if (requestedFocusCompetencies > 0) {
+        meterRegistry.summary(AppMetricNames.INTERVIEW_PLAN_RETEST_COVERAGE, tags)
+            .record(Math.max(0.0, Math.min(1.0, retestCoverage)));
+      }
+    }
+  }
+
+  public void recordStreamEnqueued(String streamKey, Outcome outcome) {
+    increment(AppMetricNames.ASYNC_STREAM_ENQUEUED, streamTags(streamKey).and(AppMetricNames.TAG_STATUS, outcome.value()));
+  }
+
+  public void recordStreamTask(String streamKey, Outcome outcome, long elapsedNanos) {
+    Tags tags = streamTags(streamKey).and(AppMetricNames.TAG_STATUS, outcome.value());
+    increment(AppMetricNames.ASYNC_STREAM_TASK, tags);
+    record(AppMetricNames.ASYNC_STREAM_PROCESSING, tags, elapsedNanos, TimeUnit.NANOSECONDS);
+  }
+
+  public void registerStreamGauges(String streamKey, AtomicLong backlog, AtomicLong pending, AtomicLong oldestPendingIdleMillis) {
+    Tags tags = streamTags(streamKey);
+    registerGauge(AppMetricNames.ASYNC_STREAM_BACKLOG, tags, backlog, AtomicLong::doubleValue);
+    registerGauge(AppMetricNames.ASYNC_STREAM_PENDING, tags, pending, AtomicLong::doubleValue);
+    registerGauge(AppMetricNames.ASYNC_STREAM_OLDEST_PENDING_IDLE, tags, oldestPendingIdleMillis, AtomicLong::doubleValue);
+  }
+
+  public void registerVoiceActiveSessionsGauge(Map<?, ?> sessions) {
+    registerGauge(AppMetricNames.VOICE_ACTIVE_SESSIONS, Tags.empty(), sessions, value -> value.size());
+  }
+
+  public void recordVoiceAsrReady() {
+    increment(AppMetricNames.VOICE_ASR_READY, statusTags(Outcome.SUCCESS));
+  }
+
+  public void recordVoiceAsrReconnect(Outcome outcome) {
+    increment(AppMetricNames.VOICE_ASR_RECONNECT, statusTags(outcome));
+  }
+
+  public void recordVoiceDroppedAudio() {
+    increment(AppMetricNames.VOICE_ASR_DROPPED_AUDIO, statusTags(Outcome.DISCARDED));
+  }
+
+  public void recordVoiceTimer(VoiceTimer timer, long elapsed, TimeUnit unit, Outcome outcome) {
+    record(timer.metricName(), statusTags(outcome), elapsed, unit);
+  }
+
+  public void recordVoiceFinalSegment() {
+    increment(AppMetricNames.VOICE_ASR_FINAL_SEGMENTS, statusTags(Outcome.SUCCESS));
+  }
+
+  public void recordVoiceLlmCall(boolean streaming, Outcome outcome) {
+    increment(AppMetricNames.VOICE_LLM_CALLS,
+        Tags.of(AppMetricNames.TAG_STATUS, outcome.value(), AppMetricNames.TAG_STREAMING, Boolean.toString(streaming)));
+  }
+
+  public void recordVoiceEmptyAudio() {
+    increment(AppMetricNames.VOICE_TTS_EMPTY_AUDIO, statusTags(Outcome.DISCARDED));
+  }
+
+  public void recordVoiceTurn(Outcome outcome) {
+    increment(AppMetricNames.VOICE_TURN_COMPLETED, statusTags(outcome));
+  }
+
+  /**
+   * 记录语音回合关键阶段。turnId 仅写日志关联，绝不作为 Prometheus 标签。
+   */
+  public void recordVoiceTurnStage(VoiceTurnStage stage, VoiceTurnMode mode,
+                                   long elapsedNanos, Outcome outcome) {
+    Tags tags = Tags.of(
+        AppMetricNames.TAG_STAGE, stage.value(),
+        AppMetricNames.TAG_MODE, mode.value(),
+        AppMetricNames.TAG_STATUS, outcome.value()
+    );
+    increment(AppMetricNames.VOICE_TURN_STAGE_TOTAL, tags);
+    if (elapsedNanos >= 0) {
+      record(AppMetricNames.VOICE_TURN_STAGE_LATENCY, tags, elapsedNanos, TimeUnit.NANOSECONDS);
+    }
+  }
+
+  public void recordVoiceCancellation(VoiceCancellationReason reason) {
+    increment(AppMetricNames.VOICE_TURN_CANCELLED, Tags.of(
+        AppMetricNames.TAG_STATUS, Outcome.DISCARDED.value(),
+        AppMetricNames.TAG_REASON, reason.value()
+    ));
+  }
+
+  public void recordVoiceStaleCallbackDropped() {
+    increment(AppMetricNames.VOICE_TURN_STALE_DROPPED, statusTags(Outcome.DISCARDED));
+  }
+
+  /**
+   * Measures server-side cancel receipt to cancel acknowledgement enqueue time.
+   * Client-visible acknowledgement time needs a controlled WebSocket experiment.
+   */
+  public void recordVoiceCancelAck(long elapsedNanos) {
+    record(AppMetricNames.VOICE_TURN_CANCEL_ACK, statusTags(Outcome.SUCCESS),
+        Math.max(0, elapsedNanos), TimeUnit.NANOSECONDS);
+  }
+
+  /**
+   * 浏览器在收到带匹配请求号的取消确认后上报的本地往返耗时。
+   * 这是客户端观测值，不能替代服务端 SLA 或安全审计时间。
+   */
+  public void recordVoiceClientCancelAck(long elapsedMillis) {
+    record(AppMetricNames.VOICE_TURN_CLIENT_CANCEL_ACK, statusTags(Outcome.SUCCESS),
+        Math.max(0, elapsedMillis), TimeUnit.MILLISECONDS);
+  }
+
+  public void recordVoiceError(VoiceErrorStage stage) {
+    increment(AppMetricNames.VOICE_ERRORS, Tags.of(AppMetricNames.TAG_STAGE, stage.value()));
+  }
+
+  private void increment(String metricName, Tags tags) {
+    if (meterRegistry != null) {
+      Counter.builder(metricName).tags(tags).register(meterRegistry).increment();
+    }
+  }
+
+  private void incrementBy(String metricName, double amount) {
+    incrementBy(metricName, amount, Tags.empty());
+  }
+
+  private void incrementBy(String metricName, double amount, Tags tags) {
+    if (meterRegistry != null && amount > 0) {
+      Counter.builder(metricName).tags(tags).register(meterRegistry).increment(amount);
+    }
+  }
+
+  private void record(String metricName, Tags tags, long elapsed, TimeUnit unit) {
+    if (meterRegistry != null) {
+      Timer.builder(metricName).tags(tags).register(meterRegistry).record(Math.max(0, elapsed), unit);
+    }
+  }
+
+  private <T> void registerGauge(String metricName, Tags tags, T state, ToDoubleFunction<T> valueFunction) {
+    if (meterRegistry == null) {
+      return;
+    }
+    String key = metricName + tags;
+    if (registeredGauges.putIfAbsent(key, Boolean.TRUE) == null) {
+      Gauge.builder(metricName, state, valueFunction).tags(tags).register(meterRegistry);
+    }
+  }
+
+  private Tags statusTags(Outcome outcome) {
+    return Tags.of(AppMetricNames.TAG_STATUS, outcome.value());
+  }
+
+  private Tags streamTags(String streamKey) {
+    return Tags.of(AppMetricNames.TAG_STREAM, StreamType.from(streamKey).value());
+  }
+
+  public enum Outcome {
+    SUCCESS("success"),
+    FAILURE("failure"),
+    SKIPPED("skipped"),
+    RETRY("retry"),
+    RECOVERED("recovered"),
+    DISCARDED("discarded");
+
+    private final String value;
+
+    Outcome(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum RetrievalPath {
+    PRIMARY("primary"),
+    FALLBACK("fallback");
+
+    private final String value;
+
+    RetrievalPath(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum RetrievalStage {
+    VECTOR("vector"),
+    LEXICAL("lexical"),
+    FUSION("fusion"),
+    CONTEXT_EXPANSION("context_expansion"),
+    RERANK("rerank");
+
+    private final String value;
+
+    RetrievalStage(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum Interaction {
+    SYNC("sync"),
+    STREAM("stream");
+
+    private final String value;
+
+    Interaction(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum VoiceTimer {
+    ASR_MERGE_WAIT(AppMetricNames.VOICE_ASR_MERGE_WAIT),
+    LLM_FIRST_TOKEN(AppMetricNames.VOICE_LLM_FIRST_TOKEN),
+    FIRST_AUDIO(AppMetricNames.VOICE_FIRST_AUDIO),
+    LLM_DURATION(AppMetricNames.VOICE_LLM_DURATION),
+    TTS_DURATION(AppMetricNames.VOICE_TTS_DURATION),
+    TURN_DURATION(AppMetricNames.VOICE_TURN_DURATION);
+
+    private final String metricName;
+
+    VoiceTimer(String metricName) {
+      this.metricName = metricName;
+    }
+
+    public String metricName() {
+      return metricName;
+    }
+  }
+
+  public enum VoiceErrorStage {
+    TURN("turn");
+
+    private final String value;
+
+    VoiceErrorStage(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+
+  private enum StreamType {
+    KNOWLEDGEBASE_VECTORIZATION(AsyncTaskStreamConstants.KB_VECTORIZE_STREAM_KEY, "knowledgebase_vectorization"),
+    RESUME_ANALYSIS(AsyncTaskStreamConstants.RESUME_ANALYZE_STREAM_KEY, "resume_analysis"),
+    INTERVIEW_EVALUATION(AsyncTaskStreamConstants.INTERVIEW_EVALUATE_STREAM_KEY, "interview_evaluation"),
+    VOICE_EVALUATION(AsyncTaskStreamConstants.VOICE_EVALUATE_STREAM_KEY, "voice_evaluation"),
+    UNKNOWN("", "unknown");
+
+    private final String streamKey;
+    private final String value;
+
+    StreamType(String streamKey, String value) {
+      this.streamKey = streamKey;
+      this.value = value;
+    }
+
+    static StreamType from(String streamKey) {
+      for (StreamType type : values()) {
+        if (type.streamKey.equals(streamKey)) {
+          return type;
+        }
+      }
+      return UNKNOWN;
+    }
+
+    String value() {
+      return value;
+    }
+  }
+
+  public enum VoiceTurnStage {
+    ASR_FINAL_TO_SUBMIT("asr_final_to_submit"),
+    LLM_FIRST_TOKEN("llm_first_token"),
+    FIRST_AUDIO("first_audio"),
+    TURN_FINISHED("turn_finished");
+
+    private final String value;
+
+    VoiceTurnStage(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum VoiceTurnMode {
+    STREAM("stream"),
+    FALLBACK("fallback"),
+    NON_STREAMING("non_streaming"),
+    UNKNOWN("unknown");
+
+    private final String value;
+
+    VoiceTurnMode(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+
+  public enum VoiceCancellationReason {
+    USER("user"),
+    DISCONNECT("disconnect");
+
+    private final String value;
+
+    VoiceCancellationReason(String value) {
+      this.value = value;
+    }
+
+    public String value() {
+      return value;
+    }
+  }
+}

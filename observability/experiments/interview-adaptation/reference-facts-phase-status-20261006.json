@@ -1,0 +1,95 @@
+{
+  "usage": {
+    "input": 22277.0,
+    "output": 5404.0,
+    "total": 27681.0,
+    "observedChatOperations": 8.0
+  },
+  "crossModelOperations": 0,
+  "originalCrossModelAuthorizationReused": false,
+  "sourceVariants": 5,
+  "actualInferenceRuns": 8,
+  "regressionAndLoadingRuns": 4,
+  "finalVariant": "r4",
+  "finalVariantLiveInferenceRuns": 0,
+  "allInferenceResultsApplyTo": "r1",
+  "contextVersions": [
+    {
+      "variant": "r1",
+      "fullReferenceChars": 7465,
+      "evaluationTruncated": true,
+      "systemDesignVisibleChars": 74
+    },
+    {
+      "variant": "r2",
+      "fullReferenceChars": 6279,
+      "evaluationTruncated": true,
+      "systemDesignVisibleChars": 1260
+    },
+    {
+      "variant": "r3",
+      "fullReferenceChars": 6048,
+      "evaluationTruncated": true,
+      "systemDesignVisibleChars": 1491
+    },
+    {
+      "variant": "r4",
+      "fullReferenceChars": 5970,
+      "evaluationTruncated": false,
+      "systemDesignVisibleChars": 1539
+    }
+  ],
+  "currentBackendSourcesMatchFinalRegression": true,
+  "defaultProviderUnchanged": true,
+  "runtime": {
+    "port": 18080,
+    "observedAt": "2026-10-06T01:59:41.1629773Z",
+    "processCreatedAt": "2026-10-06T01:58:08.6708710Z",
+    "classFilesBeforeProcessStart": [
+      {
+        "sha256": "90FE9A123BE6B9CB61E6204327DAE710216E627B8C61DED530D3BF59AFACFDA5",
+        "class": "common/evaluation/QuestionEvaluationGuide.class",
+        "lastWriteBeforeStart": true
+      },
+      {
+        "sha256": "0A1437B6173C37BDA4FE3AC2DEBD436AF2348BAF131D60CE31AACCB7751A2FD9",
+        "class": "modules/interview/service/InterviewQuestionService.class",
+        "lastWriteBeforeStart": true
+      },
+      {
+        "sha256": "4ACC04B1E1A8DC97AC07EF321FB79F4F9C0E4D813ABA897CF1148C3A8879C17B",
+        "class": "modules/interview/skill/InterviewSkillService.class",
+        "lastWriteBeforeStart": true
+      }
+    ],
+    "manifestWorkspaceMatched": true,
+    "springAi201": true,
+    "health": {
+      "groups": [
+        "liveness",
+        "readiness"
+      ],
+      "status": "UP"
+    },
+    "sdk4490": true,
+    "stopAfterVerify": false,
+    "processId": 37364,
+    "appMain": true
+  },
+  "scope": {
+    "counts": {
+      "documents": 15,
+      "vectors": 123,
+      "voiceSessions": 0,
+      "textSessions": 0,
+      "ragSessions": 0,
+      "ragMessages": 0
+    },
+    "publicVectorSha256": "76d903d460a4f34c5f3fedcc1e31b998cb999a6fb8d2ad6105760c1ed30b495b"
+  },
+  "qualityGate": "HOLD",
+  "formalRagAndVoiceGatesUnchanged": true,
+  "fullGoalStatus": "active",
+  "noIndependentHumanLabels": true,
+  "sdkWireRequests": "not captured; original retries retained"
+}

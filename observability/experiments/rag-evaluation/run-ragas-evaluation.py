@@ -80,7 +80,7 @@ def main() -> int:
   parser.add_argument("--rewrite", action="store_true", help="评测 Query Rewrite + 向量检索；默认关闭以匹配当前检索基线")
   parser.add_argument(
     "--retrieval-mode",
-    choices=("VECTOR", "HYBRID", "HYBRID_RERANK"),
+    choices=("VECTOR", "HYBRID", "HYBRID_CONTEXT", "HYBRID_RERANK"),
     default="VECTOR",
     help="固定本次回答评测使用的检索链路",
   )

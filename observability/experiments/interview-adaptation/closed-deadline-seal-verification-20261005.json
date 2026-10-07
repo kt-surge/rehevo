@@ -1,0 +1,97 @@
+{
+  "versions": [
+    {
+      "run": "training-history-baseline-20261005-r1",
+      "files": 5
+    },
+    {
+      "run": "training-history-candidate-20261005-r1",
+      "files": 97
+    },
+    {
+      "run": "training-history-product-20261005-r1",
+      "files": 95
+    },
+    {
+      "run": "evaluation-grounding-baseline-20261005-r1",
+      "files": 11
+    },
+    {
+      "run": "evaluation-grounding-candidate-20261005-r1",
+      "files": 91
+    },
+    {
+      "run": "evaluation-grounding-candidate-20261005-r2",
+      "files": 131
+    },
+    {
+      "run": "evaluation-grounding-live-baseline-20261005-r1",
+      "files": 71
+    },
+    {
+      "run": "evaluation-grounding-live-candidate-20261005-r1",
+      "files": 58
+    },
+    {
+      "run": "structured-retry-baseline-20261005-r1",
+      "files": 6
+    },
+    {
+      "run": "structured-retry-baseline-20261005-r2",
+      "files": 7
+    },
+    {
+      "run": "structured-retry-baseline-20261005-r3",
+      "files": 7
+    },
+    {
+      "run": "structured-retry-candidate-20261005-r1",
+      "files": 103
+    },
+    {
+      "run": "evaluation-closed-preflight-20261005-r1",
+      "files": 40
+    },
+    {
+      "run": "evaluation-closed-default-20261005-r1",
+      "files": 38
+    },
+    {
+      "run": "evaluation-deadline-baseline-20261005-r1",
+      "files": 6
+    },
+    {
+      "run": "evaluation-deadline-candidate-20261005-r1",
+      "files": 13
+    },
+    {
+      "run": "evaluation-deadline-candidate-20261005-r2",
+      "files": 11
+    },
+    {
+      "run": "evaluation-deadline-candidate-20261005-r3",
+      "files": 29
+    },
+    {
+      "run": "evaluation-deadline-candidate-20261005-r4",
+      "files": 114
+    },
+    {
+      "run": "evaluation-deadline-candidate-20261005-r5",
+      "files": 30
+    },
+    {
+      "run": "evaluation-deadline-candidate-20261005-r6",
+      "files": 117
+    },
+    {
+      "run": "evaluation-deadline-live-candidate-20261005-r1",
+      "files": 53
+    }
+  ],
+  "totalVersions": 22,
+  "files": 1133,
+  "mismatches": 0,
+  "extraFiles": 0,
+  "exactSensitiveValuesFound": 0
+}

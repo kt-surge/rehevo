@@ -22,11 +22,27 @@ public class VoiceInterviewProperties {
     private AudioConfig audio = new AudioConfig();
     private QwenConfig qwen = new QwenConfig();
     private OpeningConfig opening = new OpeningConfig();
+    private FrameTtsConfig frameTts = new FrameTtsConfig();
+    /** 指定岗位规则的确定性预加载，真实模型质量/延迟验收前关闭。 */
+    private boolean skillPreloadEnabled = false;
+    /** 显式历史角色候选，实际事实归属与质量验收前关闭。 */
+    private boolean roleHistoryEnabled = false;
+
+    @Data
+    public static class FrameTtsConfig {
+      /** 真实浏览器验收前保持关闭。 */
+      private boolean enabled = false;
+      private int maxPendingSentences = 16;
+      /** PCM 24000/mono/16bit 的 15 秒待播上限，含正在写出的帧。 */
+      private int maxBufferedBytes = 720000;
+    }
 
     /**
-     * 语音面试单轮面试官回复最大字符数（超出会截断到句子边界）。
+     * 完整主问题字符预算；超出只允许一次压缩，不硬切条件。
      */
     private int aiQuestionMaxChars = 120;
+    /** 原生成与一次压缩共用的绝对截止时间。 */
+    private int aiQuestionTimeoutSeconds = 20;
     /**
      * 是否启用 LLM 流式文本下发（先文本后音频），用于降低首字等待时延。
      */
@@ -138,9 +154,9 @@ public class VoiceInterviewProperties {
 
     @Data
     public static class QwenTtsConfig {
-        private String model = "qwen-audio-3.0-tts-flash";
+        private String model = "qwen-audio-3.1-tts-flash";
         private String apiKey;
-        private String voice = "longanhuan_v3.6";
+        private String voice = "longanhuan_v3.1";
         private String format = "pcm";
         private int sampleRate = 24000;
         private String mode = "commit";

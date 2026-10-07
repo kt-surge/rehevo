@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="ASR 定稿缓冲区故障矩阵" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.812Z" hostname="LAPTOP-BT5MEUFJ" time="0.001">
+  <properties/>
+  <testcase name="重复 final 不会重复进入下一轮面试输入" classname="interview.guide.modules.voiceinterview.turn.AsrFinalSegmentBufferTest" time="0.0"/>
+  <testcase name="取走输入后会清除起始时间，下一轮重新计时" classname="interview.guide.modules.voiceinterview.turn.AsrFinalSegmentBufferTest" time="0.0"/>
+  <testcase name="迟到 partial 只供展示，不污染已确认输入" classname="interview.guide.modules.voiceinterview.turn.AsrFinalSegmentBufferTest" time="0.001"/>
+  <testcase name="扩展 final 替换旧前缀而不是拼接出重复内容" classname="interview.guide.modules.voiceinterview.turn.AsrFinalSegmentBufferTest" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,125 @@
+{
+  "version": "gold-v3-multichunk-template-v1",
+  "documents": [
+    {
+      "filename": "p01-controlled-interview-packet.md",
+      "sha256": "679761a7e3f4987e29116bac952198d4edfe7fcb5b6e0224f2373b24478c1352",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P01:resume]",
+        "[EVIDENCE:P01:answer]",
+        "[EVIDENCE:P01:plan]"
+      ]
+    },
+    {
+      "filename": "p02-controlled-interview-packet.md",
+      "sha256": "c26984e354b15599ba128bad4bff7fd785e840ad0f72c7e053d9c41161cae95f",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P02:resume]",
+        "[EVIDENCE:P02:answer]",
+        "[EVIDENCE:P02:plan]"
+      ]
+    },
+    {
+      "filename": "p03-controlled-interview-packet.md",
+      "sha256": "4ddb7aebbe841f6b5ac6035e2d6d0d4652d8ac2f7c43e19b08c76649cca259e0",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P03:resume]",
+        "[EVIDENCE:P03:answer]",
+        "[EVIDENCE:P03:plan]"
+      ]
+    },
+    {
+      "filename": "p04-controlled-interview-packet.md",
+      "sha256": "7295dffa671cc47284762ceaa123b2bfe14ce5c679577dd85771ef6316347b82",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P04:resume]",
+        "[EVIDENCE:P04:answer]",
+        "[EVIDENCE:P04:plan]"
+      ]
+    },
+    {
+      "filename": "p05-controlled-interview-packet.md",
+      "sha256": "2c020cd6b885ded057f3414a78bc944b506433747f9b8b5422ca550ca10fbd6b",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P05:resume]",
+        "[EVIDENCE:P05:answer]",
+        "[EVIDENCE:P05:plan]"
+      ]
+    },
+    {
+      "filename": "p06-controlled-interview-packet.md",
+      "sha256": "99958da92733fc28880a5310ee751ca674296351a2b7269f5f08f58d59b4d81c",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P06:resume]",
+        "[EVIDENCE:P06:answer]",
+        "[EVIDENCE:P06:plan]"
+      ]
+    },
+    {
+      "filename": "p07-controlled-interview-packet.md",
+      "sha256": "a4d70fda4f527a575aea17761eab12742e6948f5cfe533df79e01fbe5ae12acf",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P07:resume]",
+        "[EVIDENCE:P07:answer]",
+        "[EVIDENCE:P07:plan]"
+      ]
+    },
+    {
+      "filename": "p08-controlled-interview-packet.md",
+      "sha256": "9fbc470258c7f875c14a0ef7b27253215b657517dad97d885493f492d7a0f9ad",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P08:resume]",
+        "[EVIDENCE:P08:answer]",
+        "[EVIDENCE:P08:plan]"
+      ]
+    },
+    {
+      "filename": "p09-controlled-interview-packet.md",
+      "sha256": "9a374414970f9322f64bfc0b1d33105bb2020c1dfad3fb99aa9ba7bc93dcccd1",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P09:resume]",
+        "[EVIDENCE:P09:answer]",
+        "[EVIDENCE:P09:plan]"
+      ]
+    },
+    {
+      "filename": "p10-controlled-interview-packet.md",
+      "sha256": "b8bcfaf183631c825f049810cebd45a44080d63df52b6d130f2f8464e6d32756",
+      "sourceType": "controlled_deidentified_fixture",
+      "source": "Rehevo Gold v3 controlled fixture; not user data",
+      "minimumExpectedChunks": 3,
+      "evidenceMarkers": [
+        "[EVIDENCE:P10:resume]",
+        "[EVIDENCE:P10:answer]",
+        "[EVIDENCE:P10:plan]"
+      ]
+    }
+  ]
+}

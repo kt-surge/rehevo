@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="env 文件操作" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.605Z" hostname="LAPTOP-BT5MEUFJ" time="0.147">
+  <properties/>
+  <testcase name="writeEnvValue 替换已有键的值" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$EnvFileOperations" time="0.035"/>
+  <testcase name="writeEnvValue 在已有文件追加新键并补换行" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$EnvFileOperations" time="0.035"/>
+  <testcase name="envPath 为 null 时不写入文件" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$EnvFileOperations" time="0.018"/>
+  <testcase name="removeFromEnv 移除指定键" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$EnvFileOperations" time="0.035"/>
+  <testcase name="writeEnvValue 在空文件追加新键" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$EnvFileOperations" time="0.023"/>
+  <system-out><![CDATA[16:50:23.680 [Test worker] WARN interview.guide.modules.llmprovider.service.LlmProviderConfigService -- YAML path not configured, skip writing
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -3,12 +3,12 @@
   "rule": "sort each category by id; odd position -> dev; even position -> test",
   "source": {
     "path": "rehevo-gold-v2-hard.jsonl",
-    "sha256": "6bac4541ea5b1d5e4648ae81439326e424658ed890f8d76b77bee03841d11b0b",
+    "sha256": "e9a66ed54117cd1b8ff61166b8d0462ac16c13863f01aacebb9a1f552753a9d6",
     "gitRevision": "e4f3739e3da99234837aecb5f94be2bcf563c1f2"
   },
   "dev": {
     "path": "rehevo-gold-v2-hard-dev.jsonl",
-    "sha256": "87e2aa5d592f4b2fece1975b0cc949811a80ce7cb99f3ed80e411f67fe50cf12",
+    "sha256": "8a610057df9ac60d96ade5b93f9cc8815153f764744da8d23bfe6d8d64f464b7",
     "cases": 20,
     "answerable": 15,
     "unanswerable": 5,

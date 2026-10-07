@@ -2,7 +2,9 @@ package interview.guide.modules.knowledgebase.repository;
 
 import interview.guide.modules.knowledgebase.model.RagChatSessionEntity;
 import interview.guide.modules.knowledgebase.model.RagChatSessionEntity.SessionStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -50,4 +52,9 @@ public interface RagChatSessionRepository extends JpaRepository<RagChatSessionEn
      */
     @Query("SELECT s FROM RagChatSessionEntity s LEFT JOIN FETCH s.knowledgeBases WHERE s.id = :id")
     Optional<RagChatSessionEntity> findByIdWithKnowledgeBases(@Param("id") Long id);
+
+    // 不与 LEFT JOIN FETCH 混用，避免 PostgreSQL 锁外连接的可空侧。
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT s FROM RagChatSessionEntity s WHERE s.id = :id")
+    Optional<RagChatSessionEntity> findByIdForUpdate(@Param("id") Long id);
 }

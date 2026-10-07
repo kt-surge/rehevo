@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="应用指标契约测试" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:17.142Z" hostname="LAPTOP-BT5MEUFJ" time="0.018">
+  <properties/>
+  <testcase name="RAG 指标记录名称、单位和成功口径" classname="interview.guide.common.metrics.ApplicationMetricsTest" time="0.004"/>
+  <testcase name="面试评估指标区分完整、部分失败和评分覆盖率" classname="interview.guide.common.metrics.ApplicationMetricsTest" time="0.0"/>
+  <testcase name="客户端收帧与起播分开计时，未知模式和非有限输入不记录延迟" classname="interview.guide.common.metrics.ApplicationMetricsTest" time="0.001"/>
+  <testcase name="业务指标不允许高基数标签" classname="interview.guide.common.metrics.ApplicationMetricsTest" time="0.005"/>
+  <testcase name="Stream 指标保留有限流类型并暴露队列 Gauge" classname="interview.guide.common.metrics.ApplicationMetricsTest" time="0.004"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="RAG 聊天会话证据快照" tests="1" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:22.831Z" hostname="LAPTOP-BT5MEUFJ" time="0.272">
+  <properties/>
+  <testcase name="流式回答完成时保存本轮检索证据快照" classname="interview.guide.modules.knowledgebase.service.RagChatSessionServiceTest" time="0.272"/>
+  <system-out><![CDATA[16:50:23.103 [Test worker] INFO interview.guide.modules.knowledgebase.service.RagChatSessionService -- 完成流式消息: messageId=7, contentLength=4
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -7,8 +7,11 @@ import interview.guide.common.ai.StructuredOutputInvoker;
 import interview.guide.common.constant.CommonConstants.InterviewDefaults;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
+import interview.guide.common.evaluation.QuestionEvaluationGuide;
+import interview.guide.common.evaluation.QuestionEvaluationGuide.RubricLevel;
 import interview.guide.modules.interview.model.HistoricalQuestion;
 import interview.guide.modules.interview.model.InterviewQuestionDTO;
+import interview.guide.modules.interview.model.InterviewReportDTO.TrainingTask;
 import interview.guide.modules.interview.skill.InterviewSkillService;
 import interview.guide.modules.interview.skill.InterviewSkillService.CategoryDTO;
 import interview.guide.modules.interview.skill.InterviewSkillService.SkillDTO;
@@ -85,8 +88,20 @@ public class InterviewQuestionService {
 
     private record QuestionListDTO(List<QuestionDTO> questions) {}
 
-    private record QuestionDTO(String question, String type, String category,
-                               String topicSummary, List<String> followUps) {}
+    private record QuestionDTO(
+        String question,
+        String type,
+        String category,
+        String topicSummary,
+        String competency,
+        List<String> keyPoints,
+        String followUpDirection,
+        List<RubricLevelDTO> rubric,
+        List<String> followUps,
+        List<String> trainingTargetIds
+    ) {}
+
+    private record RubricLevelDTO(int level, String criteria) {}
 
     public InterviewQuestionService(
             StructuredOutputInvoker structuredOutputInvoker,
@@ -124,6 +139,7 @@ public class InterviewQuestionService {
             String resumeText,
             int questionCount,
             List<HistoricalQuestion> historicalQuestions,
+            List<TrainingTask> priorTrainingTasks,
             List<CategoryDTO> customCategories,
             String jdText) {
 
@@ -134,9 +150,11 @@ public class InterviewQuestionService {
 
         boolean hasResume = resumeText != null && !resumeText.isBlank();
         String historicalSection = buildHistoricalSection(historicalQuestions);
+        List<TrainingTargetSelector.Target> trainingTargets = TrainingTargetSelector.select(priorTrainingTasks);
+        String trainingFocusSection = buildTrainingFocusSection(trainingTargets);
         if (!hasResume) {
             return generateDirectionOnly(questionChatClient, skill, difficultyDesc, questionCount,
-                historicalSection);
+                historicalSection, trainingFocusSection, trainingTargets);
         }
 
         int resumeCount = Math.max(1, (int) Math.round(questionCount * RESUME_QUESTION_RATIO));
@@ -147,12 +165,12 @@ public class InterviewQuestionService {
 
         CompletableFuture<List<InterviewQuestionDTO>> resumeFuture = CompletableFuture.supplyAsync(
             () -> generateResumeQuestions(questionChatClient, resumeText, resumeCount, skill,
-                difficultyDesc, historicalSection),
+                difficultyDesc, historicalSection, trainingFocusSection, trainingTargets),
             questionExecutor);
 
         CompletableFuture<List<InterviewQuestionDTO>> directionFuture = CompletableFuture.supplyAsync(
             () -> generateDirectionOnly(questionChatClient, skill, difficultyDesc, directionCount,
-                historicalSection),
+                historicalSection, trainingFocusSection, trainingTargets),
             questionExecutor);
 
         List<InterviewQuestionDTO> resumeQuestions;
@@ -163,7 +181,7 @@ public class InterviewQuestionService {
             log.error("简历题生成失败，降级为全方向题", e.getCause());
             directionFuture.cancel(true);
             return generateDirectionOnly(questionChatClient, skill, difficultyDesc, questionCount,
-                historicalSection);
+                historicalSection, trainingFocusSection, trainingTargets);
         }
 
         try {
@@ -189,7 +207,8 @@ public class InterviewQuestionService {
 
     private List<InterviewQuestionDTO> generateResumeQuestions(
             ChatClient questionClient, String resumeText, int questionCount,
-            SkillDTO skill, String difficultyDesc, String historicalSection) {
+            SkillDTO skill, String difficultyDesc, String historicalSection,
+            String trainingFocusSection, List<TrainingTargetSelector.Target> trainingTargets) {
         try {
             Map<String, Object> variables = new HashMap<>();
             variables.put("questionCount", questionCount);
@@ -199,6 +218,8 @@ public class InterviewQuestionService {
             variables.put("difficultyDescription", difficultyDesc);
             variables.put("resumeText", resumeText);
             variables.put("historicalSection", historicalSection);
+            variables.put("trainingFocusSection", trainingFocusSection);
+            variables.put("typeKeySection", buildTypeKeySection(skill.categories()));
 
             String systemPrompt = resumeSystemPromptTemplate.render()
                 + buildSkillPersonaSection(skill)
@@ -210,7 +231,7 @@ public class InterviewQuestionService {
                 ErrorCode.INTERVIEW_QUESTION_GENERATION_FAILED,
                 "简历题生成失败：", "简历题", log);
 
-            List<InterviewQuestionDTO> questions = convertToQuestions(dto);
+            List<InterviewQuestionDTO> questions = convertToQuestions(dto, "RESUME", trainingTargets, skill.categories());
             questions = capToMainCount(questions, questionCount);
             log.info("简历题生成完成: 请求={}, 实际主问题={}",
                 questionCount, questions.stream().filter(q -> !q.isFollowUp()).count());
@@ -225,7 +246,8 @@ public class InterviewQuestionService {
 
     private List<InterviewQuestionDTO> generateDirectionOnly(
             ChatClient questionClient, SkillDTO skill, String difficultyDesc,
-            int questionCount, String historicalSection) {
+            int questionCount, String historicalSection, String trainingFocusSection,
+            List<TrainingTargetSelector.Target> trainingTargets) {
         Map<String, Integer> allocation = skillService.calculateAllocation(skill.categories(), questionCount);
         String allocationTable = skillService.buildAllocationDescription(allocation, skill.categories());
 
@@ -241,6 +263,7 @@ public class InterviewQuestionService {
             variables.put("skillDescription", skill.description() != null ? skill.description() : "");
             variables.put("allocationTable", allocationTable);
             variables.put("historicalSection", historicalSection);
+            variables.put("trainingFocusSection", trainingFocusSection);
             variables.put("referenceSection", skillService.buildReferenceSection(skill, allocation));
             variables.put("jdSection", buildJdSection(skill.sourceJd()));
 
@@ -255,7 +278,7 @@ public class InterviewQuestionService {
                 ErrorCode.INTERVIEW_QUESTION_GENERATION_FAILED,
                 "方向题生成失败：", "方向题", log);
 
-            List<InterviewQuestionDTO> questions = convertToQuestions(dto);
+            List<InterviewQuestionDTO> questions = convertToQuestions(dto, "SKILL_REFERENCE", trainingTargets, skill.categories());
             if (questions.stream().filter(q -> !q.isFollowUp()).count() == 0) {
                 log.warn("方向题返回空题单，回退到默认问题");
                 return generateFallbackQuestions(skill, questionCount);
@@ -288,7 +311,7 @@ public class InterviewQuestionService {
                 ? q.parentQuestionIndex() + offset : null;
             merged.add(InterviewQuestionDTO.create(
                 newIndex, q.question(), q.type(), q.category(),
-                q.topicSummary(), q.isFollowUp(), newParent));
+                q.topicSummary(), q.isFollowUp(), newParent, q.evaluationGuide()));
         }
         return merged;
     }
@@ -307,7 +330,8 @@ public class InterviewQuestionService {
             DIFFICULTY_DESCRIPTIONS.get(InterviewDefaults.DIFFICULTY));
     }
 
-    private List<InterviewQuestionDTO> convertToQuestions(QuestionListDTO dto) {
+    private List<InterviewQuestionDTO> convertToQuestions(QuestionListDTO dto, String source,
+            List<TrainingTargetSelector.Target> trainingTargets, List<SkillCategoryDTO> categories) {
         List<InterviewQuestionDTO> questions = new ArrayList<>();
         int index = 0;
 
@@ -319,20 +343,91 @@ public class InterviewQuestionService {
             if (q == null || q.question() == null || q.question().isBlank()) {
                 continue;
             }
-            String type = (q.type() != null && !q.type().isBlank()) ? q.type().toUpperCase() : DEFAULT_QUESTION_TYPE;
+            String type = resolveQuestionType(q, categories);
             int mainQuestionIndex = index;
-            questions.add(InterviewQuestionDTO.create(index++, q.question(), type, q.category(), q.topicSummary(), false, null));
+            QuestionEvaluationGuide guide = buildEvaluationGuide(q, type, source, trainingTargets);
+            questions.add(InterviewQuestionDTO.create(
+                index++, q.question(), type, q.category(), q.topicSummary(), false, null, guide));
 
             List<String> followUps = sanitizeFollowUps(q.followUps());
             for (int i = 0; i < followUps.size(); i++) {
                 questions.add(InterviewQuestionDTO.create(
                     index++, followUps.get(i), type,
-                    buildFollowUpCategory(q.category(), i + 1), null, true, mainQuestionIndex
+                    buildFollowUpCategory(q.category(), i + 1), null, true, mainQuestionIndex,
+                    guide
                 ));
             }
         }
 
         return questions;
+    }
+
+    private QuestionEvaluationGuide buildEvaluationGuide(
+            QuestionDTO question, String type, String source,
+            List<TrainingTargetSelector.Target> trainingTargets) {
+        String competency = firstNonBlank(question.competency(), question.category(), type);
+        List<String> keyPoints = question.keyPoints() != null && !question.keyPoints().isEmpty()
+            ? question.keyPoints()
+            : question.topicSummary() != null && !question.topicSummary().isBlank()
+                ? List.of(question.topicSummary())
+                : List.of();
+        List<RubricLevel> rubric = question.rubric() == null
+            ? List.of()
+            : question.rubric().stream()
+                .filter(item -> item != null)
+                .map(item -> new RubricLevel(item.level(), item.criteria()))
+                .toList();
+        return new QuestionEvaluationGuide(
+            competency,
+            keyPoints,
+            firstNonBlank(
+                question.followUpDirection(),
+                "根据候选人的缺失点追问原理、边界或实际验证方式"),
+            source,
+            rubric,
+            validateTrainingTargetIds(question.trainingTargetIds(), trainingTargets)
+        );
+    }
+
+  private List<String> validateTrainingTargetIds(List<String> ids,
+      List<TrainingTargetSelector.Target> targets) {
+    if (ids == null) return List.of();
+    List<String> distinctIds = ids.stream().filter(id -> id != null && !id.isBlank())
+        .map(String::trim).distinct().toList();
+    if (distinctIds.size() != 1) return List.of();
+    String id = distinctIds.getFirst();
+    return targets.stream().anyMatch(target -> target.id().equals(id)) ? List.of(id) : List.of();
+  }
+
+  private String resolveQuestionType(QuestionDTO question, List<SkillCategoryDTO> categories) {
+    if (categories == null || categories.isEmpty()) return DEFAULT_QUESTION_TYPE;
+    for (SkillCategoryDTO category : categories) {
+      if (sameClassification(category.key(), question.type())) return category.key();
+    }
+    for (SkillCategoryDTO category : categories) {
+      if (sameClassification(category.key(), question.category())
+          || sameClassification(category.label(), question.category())) return category.key();
+    }
+    throw new BusinessException(ErrorCode.INTERVIEW_QUESTION_GENERATION_FAILED,
+        "题目分类不在当前面试方向，请重新生成题目");
+  }
+
+  private boolean sameClassification(String expected, String actual) {
+    return expected != null && actual != null && expected.trim().equalsIgnoreCase(actual.trim());
+  }
+
+  private String buildTypeKeySection(List<SkillCategoryDTO> categories) {
+    String keys = categories.stream().map(category -> "- " + category.key() + "：" + category.label())
+        .collect(Collectors.joining("\n"));
+    return PromptSecurityConstants.DATA_BOUNDARY_INSTRUCTION + "\n"
+        + promptSanitizer.wrapWithDelimiters("type_keys", promptSanitizer.sanitize(keys));
+  }
+
+    private String firstNonBlank(String... candidates) {
+        for (String candidate : candidates) {
+            if (candidate != null && !candidate.isBlank()) return candidate.trim();
+        }
+        return "综合能力";
     }
 
     /**
@@ -374,12 +469,17 @@ public class InterviewQuestionService {
             while (generated < count) {
                 SkillCategoryDTO cat = categories.get(generated % categories.size());
                 String question = "请谈谈你在\"" + cat.label() + "\"方向的技术理解和实践经验。";
-                questions.add(InterviewQuestionDTO.create(index++, question, cat.key(), cat.label(), null, false, null));
+                QuestionEvaluationGuide guide = new QuestionEvaluationGuide(
+                    cat.label(), List.of(), "追问实际使用、核心原理和失败边界", "FALLBACK",
+                    List.of(), List.of());
+                questions.add(InterviewQuestionDTO.create(
+                    index++, question, cat.key(), cat.label(), null, false, null, guide));
                 int mainIndex = index - 1;
                 for (int j = 0; j < followUpCount; j++) {
                     questions.add(InterviewQuestionDTO.create(
                         index++, buildDefaultFollowUp(question, j + 1),
-                        cat.key(), buildFollowUpCategory(cat.label(), j + 1), null, true, mainIndex
+                        cat.key(), buildFollowUpCategory(cat.label(), j + 1), null, true, mainIndex,
+                        guide
                     ));
                 }
                 generated++;
@@ -389,12 +489,17 @@ public class InterviewQuestionService {
 
         for (int i = 0; i < Math.min(count, GENERIC_FALLBACK_QUESTIONS.length); i++) {
             String[] q = GENERIC_FALLBACK_QUESTIONS[i];
-            questions.add(InterviewQuestionDTO.create(index++, q[0], q[1], q[2], null, false, null));
+            QuestionEvaluationGuide guide = new QuestionEvaluationGuide(
+                q[2], List.of(), "追问真实行为、决策依据和结果证据", "FALLBACK",
+                List.of(), List.of());
+            questions.add(InterviewQuestionDTO.create(
+                index++, q[0], q[1], q[2], null, false, null, guide));
             int mainIndex = index - 1;
             for (int j = 0; j < followUpCount; j++) {
                 questions.add(InterviewQuestionDTO.create(
                     index++, buildDefaultFollowUp(q[0], j + 1),
-                    q[1], buildFollowUpCategory(q[2], j + 1), null, true, mainIndex
+                    q[1], buildFollowUpCategory(q[2], j + 1), null, true, mainIndex,
+                    guide
                 ));
             }
         }
@@ -425,6 +530,29 @@ public class InterviewQuestionService {
         }
         return sb.toString();
     }
+
+    private String buildTrainingFocusSection(List<TrainingTargetSelector.Target> targets) {
+        if (targets.isEmpty()) {
+            return "暂无历史训练目标；按当前题目分布出题，trainingTargetIds 设为 []。";
+        }
+        StringBuilder focus = new StringBuilder();
+        focus.append("以下是上一场评估产生的训练目标，仅用于安排本场问题；不要把原因当成候选人已承认的事实。\n");
+        targets.forEach(target -> focus.append("- 目标 ID：").append(target.id())
+                .append("；能力点：").append(target.task().competency().trim())
+                .append("；优先级：").append(target.task().priority())
+                .append("；待复核原因：")
+                .append(trainingField(target.task().reason()))
+                .append("；练习动作：").append(trainingField(target.task().action()))
+                .append("；完成标准：").append(trainingField(target.task().completionCriteria()))
+                .append('\n'));
+        focus.append("在不偏离当前 Skill、简历和题目数量约束的前提下，至少安排一个主问题检验优先级最高且与当前方向相关的目标。问题和评分要点应检查练习动作与完成标准，不要求复述旧原因。关联该目标时 trainingTargetIds 填入它的完整 ID，每题至多一个；无关或无法检验时设为 []，不为了覆盖率强行关联。\n");
+        return PromptSecurityConstants.DATA_BOUNDARY_INSTRUCTION + "\n"
+            + promptSanitizer.wrapWithDelimiters("training_focus", promptSanitizer.sanitize(focus.toString()));
+    }
+
+  private String trainingField(String value) {
+    return value == null || value.isBlank() ? "未提供" : value.trim();
+  }
 
     private String buildJdSection(String sourceJd) {
         if (sourceJd == null || sourceJd.isBlank()) {

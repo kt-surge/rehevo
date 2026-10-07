@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="LlmProviderController 测试" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.117Z" hostname="LAPTOP-BT5MEUFJ" time="0.063">
+  <properties/>
+  <testcase name="listProviders 返回 provider 列表" classname="interview.guide.modules.llmprovider.controller.LlmProviderControllerTest" time="0.059"/>
+  <testcase name="getDefaultProvider 返回全局默认 provider" classname="interview.guide.modules.llmprovider.controller.LlmProviderControllerTest" time="0.001"/>
+  <testcase name="deleteProvider 调用 service" classname="interview.guide.modules.llmprovider.controller.LlmProviderControllerTest" time="0.002"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

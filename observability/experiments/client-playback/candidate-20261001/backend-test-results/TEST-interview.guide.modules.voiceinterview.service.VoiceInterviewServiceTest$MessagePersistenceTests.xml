@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="消息持久化测试" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.758Z" hostname="LAPTOP-BT5MEUFJ" time="0.007">
+  <properties/>
+  <testcase name="保存消息 - 会话不存在时应静默处理" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$MessagePersistenceTests" time="0.002"/>
+  <testcase name="获取对话历史 - 验证排序" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$MessagePersistenceTests" time="0.002"/>
+  <testcase name="保存消息 - 验证基本流程" classname="interview.guide.modules.voiceinterview.service.VoiceInterviewServiceTest$MessagePersistenceTests" time="0.003"/>
+  <system-out><![CDATA[16:50:30.761 [Test worker] WARN interview.guide.modules.voiceinterview.service.VoiceInterviewService -- Cannot save message - session not found: 999
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

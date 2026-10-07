@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="统一面试评估汇总" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:15.987Z" hostname="LAPTOP-BT5MEUFJ" time="1.144">
+  <properties/>
+  <testcase name="批次缺失题会进行有界单题重试并恢复评分" classname="interview.guide.common.evaluation.UnifiedEvaluationServiceTest" time="0.886"/>
+  <testcase name="批次并发受配置上限约束，单批失败不阻断其余题与汇总" classname="interview.guide.common.evaluation.UnifiedEvaluationServiceTest" time="0.222"/>
+  <testcase name="模型汇总重复能力点会在服务端合并并保留最高优先级" classname="interview.guide.common.evaluation.UnifiedEvaluationServiceTest" time="0.018"/>
+  <testcase name="整份报告预算耗尽后不再调用模型，已回答题明确标记为评估失败" classname="interview.guide.common.evaluation.UnifiedEvaluationServiceTest" time="0.014"/>
+  <testcase name="降级训练任务按能力点合并缺失题并让最低分能力优先复测" classname="interview.guide.common.evaluation.UnifiedEvaluationServiceTest" time="0.001"/>
+  <system-out><![CDATA[16:50:16.740 [Test worker] INFO interview.guide.common.evaluation.UnifiedEvaluationService -- 开始评估面试: sessionId=retry-session, 共2题
+16:50:16.899 [Test worker] INFO interview.guide.common.evaluation.UnifiedEvaluationService -- 开始评估面试: sessionId=bounded-batches, 共5题
+16:50:17.027 [ThreadPoolTaskExecutor-2] ERROR interview.guide.common.evaluation.UnifiedEvaluationService -- 批次评估失败: sessionId=bounded-batches, batchSize=1, error=受控批次失败
+java.lang.IllegalStateException: 受控批次失败
+	at interview.guide.common.evaluation.UnifiedEvaluationServiceTest.lambda$shouldBoundBatchConcurrencyAndIsolateBatchFailure$0(UnifiedEvaluationServiceTest.java:218)
+	at org.mockito.internal.stubbing.StubbedInvocationMatcher.answer(StubbedInvocationMatcher.java:42)
+	at org.mockito.internal.handler.MockHandlerImpl.handle(MockHandlerImpl.java:103)
+	at org.mockito.internal.handler.NullResultGuardian.handle(NullResultGuardian.java:29)
+	at org.mockito.internal.handler.InvocationNotifierHandler.handle(InvocationNotifierHandler.java:34)
+	at org.mockito.internal.creation.bytebuddy.access.MockMethodInterceptor.doIntercept(MockMethodInterceptor.java:84)
+	at org.mockito.internal.creation.bytebuddy.MockMethodAdvice.handle(MockMethodAdvice.java:143)
+	at interview.guide.common.ai.StructuredOutputInvoker.invoke(StructuredOutputInvoker.java:73)
+	at interview.guide.common.evaluation.UnifiedEvaluationService.evaluateBatch(UnifiedEvaluationService.java:358)
+	at interview.guide.common.evaluation.UnifiedEvaluationService.evaluateBatchResult(UnifiedEvaluationService.java:308)
+	at interview.guide.common.evaluation.UnifiedEvaluationService.lambda$evaluateInBatches$0(UnifiedEvaluationService.java:287)
+	at java.base/java.util.concurrent.CompletableFuture$AsyncSupply.run(CompletableFuture.java:1768)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+16:50:17.109 [Test worker] INFO interview.guide.common.evaluation.UnifiedEvaluationService -- 开始评估面试: sessionId=merge-summary, 共3题
+16:50:17.128 [Test worker] INFO interview.guide.common.evaluation.UnifiedEvaluationService -- 开始评估面试: sessionId=expired-session, 共2题
+16:50:17.128 [Test worker] WARN interview.guide.common.evaluation.UnifiedEvaluationService -- 评估预算已耗尽，跳过剩余批次: sessionId=expired-session, startIndex=0, endIndex=2
+16:50:17.128 [Test worker] WARN interview.guide.common.evaluation.UnifiedEvaluationService -- 评估预算已耗尽，跳过失败题重试: sessionId=expired-session
+16:50:17.128 [Test worker] WARN interview.guide.common.evaluation.UnifiedEvaluationService -- 评估预算已耗尽，跳过二次汇总: sessionId=expired-session
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

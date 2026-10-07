@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="QwenAsrService Unit Tests" tests="9" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:30.188Z" hostname="LAPTOP-BT5MEUFJ" time="0.102">
+  <properties/>
+  <testcase name="Should initialize service successfully" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.0"/>
+  <testcase name="reload 应更新所有 ASR 配置字段" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.001"/>
+  <testcase name="Should stop transcription and remove session" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.091"/>
+  <testcase name="extractTranscriptPayload should concatenate text + stash for partial ASR events" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.004"/>
+  <testcase name="Should cleanup resources on destroy" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.002"/>
+  <testcase name="Should throw exception when sending audio to non-existent session" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.0"/>
+  <testcase name="Should start transcription and create session" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.001"/>
+  <testcase name="extractTranscriptPayload should merge confirmed prefix and draft suffix" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.0"/>
+  <testcase name="Should handle multiple concurrent sessions" classname="interview.guide.modules.voiceinterview.service.QwenAsrServiceTest" time="0.002"/>
+  <system-out><![CDATA[16:50:30.188 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- QwenAsrService initialized with model: qwen-audio-3.0-asr-flash-streaming, url: wss://dashscope.aliyuncs.com/api-ws/v1/inference
+16:50:30.190 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- QwenAsrService reloaded: model=new-asr-model, url=wss://new-host.example.com/ws
+16:50:30.190 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- QwenAsrService initialized with model: qwen-audio-3.0-asr-flash-streaming, url: wss://dashscope.aliyuncs.com/api-ws/v1/inference
+16:50:30.280 [Test worker] WARN interview.guide.modules.voiceinterview.service.QwenAsrService -- [Session: test-session-2] Error while ending session (may already be closed): {"statusCode":-1,"message":"RuntimeException: State invalid: expect recognition state is started but idle","code":"network error","isJson":false}
+16:50:30.286 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- QwenAsrService initialized with model: qwen-audio-3.0-asr-flash-streaming, url: wss://dashscope.aliyuncs.com/api-ws/v1/inference
+16:50:30.286 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- Destroying QwenAsrService with 2 active sessions
+16:50:30.287 [Test worker] WARN interview.guide.modules.voiceinterview.service.QwenAsrService -- [Session: session-1] Error while ending session (may already be closed): {"statusCode":-1,"message":"RuntimeException: State invalid: expect recognition state is started but idle","code":"network error","isJson":false}
+16:50:30.287 [Test worker] WARN interview.guide.modules.voiceinterview.service.QwenAsrService -- [Session: session-2] Error while ending session (may already be closed): {"statusCode":-1,"message":"RuntimeException: State invalid: expect recognition state is started but idle","code":"network error","isJson":false}
+16:50:30.287 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- QwenAsrService destroyed successfully
+16:50:30.287 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- QwenAsrService initialized with model: qwen-audio-3.0-asr-flash-streaming, url: wss://dashscope.aliyuncs.com/api-ws/v1/inference
+16:50:30.289 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- QwenAsrService initialized with model: qwen-audio-3.0-asr-flash-streaming, url: wss://dashscope.aliyuncs.com/api-ws/v1/inference
+16:50:30.289 [Test worker] WARN interview.guide.modules.voiceinterview.service.QwenAsrService -- [Session: test-session-1] Error while ending session (may already be closed): {"statusCode":-1,"message":"RuntimeException: State invalid: expect recognition state is started but idle","code":"network error","isJson":false}
+16:50:30.290 [Test worker] INFO interview.guide.modules.voiceinterview.service.QwenAsrService -- QwenAsrService initialized with model: qwen-audio-3.0-asr-flash-streaming, url: wss://dashscope.aliyuncs.com/api-ws/v1/inference
+16:50:30.291 [Test worker] WARN interview.guide.modules.voiceinterview.service.QwenAsrService -- [Session: session-1] Error while ending session (may already be closed): {"statusCode":-1,"message":"RuntimeException: State invalid: expect recognition state is started but idle","code":"network error","isJson":false}
+16:50:30.291 [Test worker] WARN interview.guide.modules.voiceinterview.service.QwenAsrService -- [Session: session-2] Error while ending session (may already be closed): {"statusCode":-1,"message":"RuntimeException: State invalid: expect recognition state is started but idle","code":"network error","isJson":false}
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -156,7 +156,7 @@ public class VoiceInterviewController {
     public Result<VoiceEvaluationStatusDTO> getEvaluation(@PathVariable Long sessionId) {
         log.info("Getting evaluation status for session: {}", sessionId);
 
-        VoiceInterviewSessionEntity session = voiceInterviewService.getSession(sessionId);
+        VoiceInterviewSessionEntity session = voiceInterviewService.getEvaluationSession(sessionId);
         if (session == null) {
             throw new BusinessException(ErrorCode.VOICE_SESSION_NOT_FOUND, "会话不存在: " + sessionId);
         }
@@ -186,7 +186,7 @@ public class VoiceInterviewController {
     public Result<VoiceEvaluationStatusDTO> generateEvaluation(@PathVariable Long sessionId) {
         log.info("Triggering async evaluation for session: {}", sessionId);
 
-        VoiceInterviewSessionEntity session = voiceInterviewService.getSession(sessionId);
+        VoiceInterviewSessionEntity session = voiceInterviewService.getEvaluationSession(sessionId);
         if (session == null) {
             throw new BusinessException(ErrorCode.VOICE_SESSION_NOT_FOUND, "会话不存在: " + sessionId);
         }

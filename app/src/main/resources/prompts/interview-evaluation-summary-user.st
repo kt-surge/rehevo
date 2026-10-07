@@ -23,3 +23,6 @@
 
 ### 初始改进建议
 {fallbackImprovements}
+
+## 训练任务要求
+请把有证据的改进项转成 0—5 个训练任务，可少于 3 个或为空。questionIndexes 只可填写 SCORED 已回答题明确给出的原始 questionIndex，不能填显示序号。说明触发原因、具体动作和完成标准，不能为凑数量编造缺口。UNANSWERED / EVALUATION_FAILED 题不参与能力判断或训练任务。

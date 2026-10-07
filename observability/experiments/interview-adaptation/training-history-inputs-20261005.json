@@ -1,0 +1,7 @@
+{
+  "seed": 2026100510,
+  "sequences": [{
+    "id": "public-voice-to-text-training",
+    "texts": ["这是公开受控练习：我使用 Redis Stream 和数据库事务处理消息，但没有验证提交成功、ACK 前进程退出的情况。我目前以为加上 @Transactional 就能避免消息重复处理，也没验证同类内部调用是否经过代理。"]
+  }]
+}

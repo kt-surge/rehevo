@@ -1,0 +1,35 @@
+{
+  "port": 18080,
+  "observedAt": "2026-10-06T01:59:41.1629773Z",
+  "processCreatedAt": "2026-10-06T01:58:08.6708710Z",
+  "classFilesBeforeProcessStart": [
+    {
+      "sha256": "90FE9A123BE6B9CB61E6204327DAE710216E627B8C61DED530D3BF59AFACFDA5",
+      "class": "common/evaluation/QuestionEvaluationGuide.class",
+      "lastWriteBeforeStart": true
+    },
+    {
+      "sha256": "0A1437B6173C37BDA4FE3AC2DEBD436AF2348BAF131D60CE31AACCB7751A2FD9",
+      "class": "modules/interview/service/InterviewQuestionService.class",
+      "lastWriteBeforeStart": true
+    },
+    {
+      "sha256": "4ACC04B1E1A8DC97AC07EF321FB79F4F9C0E4D813ABA897CF1148C3A8879C17B",
+      "class": "modules/interview/skill/InterviewSkillService.class",
+      "lastWriteBeforeStart": true
+    }
+  ],
+  "manifestWorkspaceMatched": true,
+  "springAi201": true,
+  "health": {
+    "groups": [
+      "liveness",
+      "readiness"
+    ],
+    "status": "UP"
+  },
+  "sdk4490": true,
+  "stopAfterVerify": false,
+  "processId": 37364,
+  "appMain": true
+}

@@ -1,0 +1,87 @@
+{
+  "reports": {
+    "baseline": {
+      "usage": {
+        "input": 2626.0,
+        "output": 798.0,
+        "total": 3424.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operation counts are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 1,
+        "followUps": 0,
+        "requestedCategory": "SPRING",
+        "actualType": "SPRING",
+        "typeMatches": true,
+        "trainingTargetIds": [
+          "training:b0f79754-e2f1-375c-a49c-3eb348554fbe"
+        ],
+        "targetIdsValid": true,
+        "rawRubricLevels": 5,
+        "actualReferenceChars": 1269,
+        "actualProductSessionWrites": 0,
+        "semanticQualityGate": "HOLD pending separate semantic and fixed-answer scoring review",
+        "scopeUnchanged": true,
+        "formalEffectOrLatency": false
+      },
+      "result": {
+        "formalEffectOrLatency": false,
+        "elapsedMs": 12644.4299,
+        "status": "finished",
+        "invokerOperations": 1
+      }
+    },
+    "candidate": {
+      "usage": {
+        "input": 2864.0,
+        "output": 609.0,
+        "total": 3473.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operation counts are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 1,
+        "followUps": 0,
+        "requestedCategory": "SPRING",
+        "actualType": "SPRING",
+        "typeMatches": true,
+        "trainingTargetIds": [
+          "training:b0f79754-e2f1-375c-a49c-3eb348554fbe"
+        ],
+        "targetIdsValid": true,
+        "rawRubricLevels": 5,
+        "actualReferenceChars": 1881,
+        "actualProductSessionWrites": 0,
+        "semanticQualityGate": "HOLD pending separate semantic and fixed-answer scoring review",
+        "scopeUnchanged": true,
+        "formalEffectOrLatency": false
+      },
+      "result": {
+        "invokerOperations": 1,
+        "formalEffectOrLatency": false,
+        "elapsedMs": 13346.0999,
+        "status": "finished"
+      }
+    }
+  },
+  "integrity": {
+    "inputByteIdentical": true,
+    "promptOutsideReferenceEqual": true,
+    "systemAndSecuritySuffixEqual": true,
+    "onlyActualReferenceSectionDiffers": true,
+    "randomBoundaryAndCrlfOnlyNormalization": true,
+    "case": "spring-proxy",
+    "order": "BA",
+    "exposedDevelopmentDiagnostic": true,
+    "noFormalQualityOrLatencyClaim": true
+  }
+}

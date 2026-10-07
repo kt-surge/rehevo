@@ -1,5 +1,7 @@
 package interview.guide.modules.interview.model;
 
+import interview.guide.common.evaluation.QuestionEvaluationGuide;
+
 /**
  * 面试问题DTO
  * type 由 Skill category key 驱动（如 MYSQL、CSS、DYNAMIC_PROGRAMMING 等），不再使用枚举
@@ -14,22 +16,39 @@ public record InterviewQuestionDTO(
     Integer score,
     String feedback,
     boolean isFollowUp,
-    Integer parentQuestionIndex
+    Integer parentQuestionIndex,
+    QuestionEvaluationGuide evaluationGuide
 ) {
     public static InterviewQuestionDTO create(int index, String question, String type, String category) {
-        return new InterviewQuestionDTO(index, question, type, category, null, null, null, null, false, null);
+        return new InterviewQuestionDTO(
+            index, question, type, category, null, null, null, null, false, null, null);
     }
 
     public static InterviewQuestionDTO create(int index, String question, String type, String category,
                                                String topicSummary, boolean isFollowUp, Integer parentQuestionIndex) {
-        return new InterviewQuestionDTO(index, question, type, category, topicSummary, null, null, null, isFollowUp, parentQuestionIndex);
+        return new InterviewQuestionDTO(
+            index, question, type, category, topicSummary, null, null, null,
+            isFollowUp, parentQuestionIndex, null);
+    }
+
+    public static InterviewQuestionDTO create(
+            int index, String question, String type, String category, String topicSummary,
+            boolean isFollowUp, Integer parentQuestionIndex,
+            QuestionEvaluationGuide evaluationGuide) {
+        return new InterviewQuestionDTO(
+            index, question, type, category, topicSummary, null, null, null,
+            isFollowUp, parentQuestionIndex, evaluationGuide);
     }
 
     public InterviewQuestionDTO withAnswer(String answer) {
-        return new InterviewQuestionDTO(questionIndex, question, type, category, topicSummary, answer, score, feedback, isFollowUp, parentQuestionIndex);
+        return new InterviewQuestionDTO(
+            questionIndex, question, type, category, topicSummary, answer, score, feedback,
+            isFollowUp, parentQuestionIndex, evaluationGuide);
     }
 
     public InterviewQuestionDTO withEvaluation(int score, String feedback) {
-        return new InterviewQuestionDTO(questionIndex, question, type, category, topicSummary, userAnswer, score, feedback, isFollowUp, parentQuestionIndex);
+        return new InterviewQuestionDTO(
+            questionIndex, question, type, category, topicSummary, userAnswer, score, feedback,
+            isFollowUp, parentQuestionIndex, evaluationGuide);
     }
 }

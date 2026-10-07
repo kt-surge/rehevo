@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="面试会话自适应 PREP" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:19.791Z" hostname="LAPTOP-BT5MEUFJ" time="0.322">
+  <properties/>
+  <testcase name="创建下一场时把同范围历史训练任务传给出题服务" classname="interview.guide.modules.interview.service.InterviewSessionServiceTest" time="0.298"/>
+  <testcase name="提交主问题时返回 LIVE 追问观察建议并记录有限指标" classname="interview.guide.modules.interview.service.InterviewSessionServiceTest" time="0.024"/>
+  <system-out><![CDATA[16:50:20.082 [Test worker] INFO interview.guide.modules.interview.service.InterviewSessionService -- 创建新面试会话: c004adebb8894d04, skill: java-backend, difficulty: mid, questionCount: 3, resumeId: 42
+16:50:20.112 [Test worker] INFO interview.guide.modules.interview.service.InterviewSessionService -- 会话 live-observe 提交答案: 问题0, 剩余1题
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

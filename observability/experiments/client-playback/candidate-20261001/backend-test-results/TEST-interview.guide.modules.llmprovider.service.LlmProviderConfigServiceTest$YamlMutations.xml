@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="YAML 文件操作" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:23.525Z" hostname="LAPTOP-BT5MEUFJ" time="0.079">
+  <properties/>
+  <testcase name="yamlPath 为 null 时 mutateYaml 不抛异常" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$YamlMutations" time="0.014"/>
+  <testcase name="mutateYaml 保留已有 YAML 结构" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$YamlMutations" time="0.038"/>
+  <testcase name="mutateYaml 在文件不存在时创建新文件" classname="interview.guide.modules.llmprovider.service.LlmProviderConfigServiceTest$YamlMutations" time="0.025"/>
+  <system-out><![CDATA[16:50:23.531 [Test worker] WARN interview.guide.modules.llmprovider.service.LlmProviderConfigService -- YAML path not configured, skip writing
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

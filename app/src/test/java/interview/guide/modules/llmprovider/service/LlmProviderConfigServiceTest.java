@@ -181,6 +181,17 @@ class LlmProviderConfigServiceTest {
             assertTrue(body.containsKey("messages"));
             assertTrue(!body.containsKey("temperature"));
         }
+
+        @Test
+        @DisplayName("连接预检使用与正式调用一致的模型参数")
+        void connectivityRequestUsesConfiguredModelExtras() throws Exception {
+            when(properties.chatExtraBodyForModel("qwen3.8-flash"))
+                .thenReturn(Map.of("enable_thinking", false, "preserve_thinking", false));
+            Map<String, Object> body = invokeConnectivityRequestBody("qwen3.8-flash");
+            assertEquals(false, body.get("enable_thinking"));
+            assertEquals(false, body.get("preserve_thinking"));
+            assertEquals(1, body.get("max_tokens"));
+        }
     }
 
     @Nested

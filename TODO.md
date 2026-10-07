@@ -1,10 +1,12 @@
 # InterviewGuide TODO
 
+> 2026-10-01 当前优化入口：[第一轮需求、方案评审与持续目标](REHEVO_OPTIMIZATION_GOAL_AND_DESIGN_2026-10-01.md)。本轮按 S0–S4 推进；下文保留此前里程碑与历史记录，完成状态须结合当前实验重新核验。
+
 > 当前主线：先建立可信基线与可观测闭环，再依次推进评估可信度、RAG/PREP、实时 Turn 和性能优化。
 >
 > 策略来源：`C:\Users\yngtao\Documents\Codex\2026-07-28\wo\outputs\AI面试开源项目横向调研与InterviewGuide融合策略.md`
 >
-> 最近核对：2026-08-15。`[x]` 只表示当前源码或本次命令已验证；历史运行记录和设计文档不算当前完成证据。
+> 最近核对：2026-09-19。`[x]` 只表示当前源码或本次命令已验证；历史运行记录和设计文档不算当前完成证据。当前执行与量化门槛见 `TECHNICAL_EXECUTION_PLAN.md`。
 
 ## 当前结论
 
@@ -23,7 +25,7 @@
 - [x] RAG 运行可观测：向量化、主/兜底检索、改写和回答已写入专属 Micrometer 指标；本轮真实查询已在 Prometheus 验证。
 - [x] 监控配置已版本化：`observability/` 包含 Prometheus 抓取、Grafana 自动装载、三张 Dashboard、七条告警与 RAG 基线实验记录；本轮仍需启动容器验证闭环。
 - [ ] RAG 来源可追溯：`QueryResponse` 当前只有答案、知识库 ID 和名称，没有来源片段与相似度。
-- [ ] 实时 Turn 有明确协议：当前没有独立 `VoiceTurnCoordinator`，也没有统一的 `turnId/eventId/sequence` 约束。
+- [x] 实时 Turn 已具备最小协议：`VoiceTurnCoordinator` 为 LLM/TTS 出站事件分配 `turnId/eventId/sequence`，取消或新 Turn 后会拦截旧回调；仍缺 Fake Provider 的完整故障矩阵和真实基线对照。
 
 ## M0：可信基线 + 可观测第一版（现在做）
 
@@ -98,33 +100,47 @@ M0 最终验收：打开 Grafana 能定位一次完整语音面试的 ASR → LL
 
 ### M1：评估可信度
 
-- [ ] 题目持久化 `competency`、0—4 级 Rubric、关键点、追问方向和来源。
-- [ ] 每题评价保存命中 Rubric、回答证据、缺失点、事实风险和可执行建议。
+- [x] 文字面试题目随会话 JSON 持久化 `competency`、0—4 级 Rubric、关键点、追问方向和来源；历史题目缺失字段时保持兼容。
+- [x] 每题评价保存命中 Rubric 等级、可定位的回答原文证据、缺失点、事实风险和下一步动作。
 - [ ] 单题失败隔离并使用有限并发；失败项不拖垮整份报告。
-- [ ] 分离 Coverage 与总分，未回答题目不静默计零参与平均。
-- [ ] 报告生成 3—5 个有依据和完成标准的下一轮训练任务。
-- [ ] 用固定问答样例验证评分稳定性。
+  - [x] 批次缺失或失败后，对有回答的失败题执行最多 3 次报告级单题重试，并记录 recovered/failure 指标。
+  - [x] 批次执行改为独立有界执行器；默认仍串行（并发上限 1），替身试验证明配置上限 2 时不会超过 2，单批失败不阻断其余题或汇总。真实 Provider 的限流与失败率前后对照尚未完成，禁止据此提高默认并发。
+- [x] 分离评分 Coverage 与总分；未回答题和评估失败题不参与能力平均，并在题目级明确标记状态。
+- [x] 增加报告级已回答数、成功评分数、失败数、覆盖率及对应 Prometheus 指标。
+- [x] 增加证据覆盖率；模型返回但无法在候选人回答中逐字定位的“证据”会被服务端丢弃。
+- [x] 报告生成并持久化 3—5 个绑定题目、原因、行动、完成标准和优先级的训练任务；无有效评分时不伪造任务。
+- [x] 建立 10 组 × 3 档回答的 30 条评分 seed、重复运行入口和汇总脚本；接口默认关闭。
+- [~] 人工复核并冻结评分 Gold 集，真实重复运行 3 次后验证覆盖率、分数极差、等级排序与区间命中率。已确认 Provider 不可用时单批约 61 秒失败；模型读取默认上限已设为 60 秒，整份报告另有 180 秒调用预算，预算耗尽后停止后续调用并将剩余已回答题标为评估失败。当前尚无有效质量基线。
 
 进入 M2 的条件：报告中的每个结论都能定位到回答证据，并明确展示覆盖率和失败项。
 
 ### M2：可信 RAG + PREP
 
-- [ ] 新增 `RagSourceDTO`，让 `QueryResponse` 返回来源、Chunk、摘要和分数。
-- [ ] Chunk metadata 补齐文档名、序号、章节和来源类型。
-- [ ] 前端显示来源卡片、引用编号和可展开原文。
-- [ ] 建立 30—50 个固定问题，验证前排命中、正确拒答、答案忠实和引用支持。
+- [x] `QueryResponse` 返回候选来源、Chunk、摘要与检索/融合/重排分数。
+- [~] 检索证据与聊天快照已返回文档哈希、片段序号、检索来源、原始文件名和文件类型；向量化写入已显式固化连续 `chunk_index` 并通过多 Chunk 单测。公开 v1/v2 基线仍是单 Chunk；独立 Gold v3 已实际入库 10 份 × 4 Chunk，章节仍待解析器提供可靠来源，不能由片段序号代替。
+  - [x] 增加 `verify-multichunk-corpus.ps1`：只读校验向量化状态、Chunk 总数与连续索引，并冻结实际文档 SHA-256/Chunk 范围；已对 Gold v3 的 10 份真实受控材料完成结构验收。
+  - [x] 增加 Gold v3 受控 Fixture 生成与 marker 对齐工具：生成 10 份去标识化多段档案、50 条（40 可回答/10 拒答）待复核题；实际入库后才以 `documentSha256 + chunkIndex` 生成 draft，且每个可回答 marker 必须有一条同时存在于实际 Chunk 与参考答案的证据事实；脚本不会自动标记人工复核通过。
+  - [x] 检索基线入口已加入 Gold 数据契约校验：可选强制 `reviewed`、JSONL SHA-256、题量、可回答数与 dev/test split manifest 一致；`-ValidateOnly` 可在不调用服务的情况下拒绝未对齐或未复核数据。修订后的 v3 draft（50/40，SHA-256 `f98c…8ada`）已通过结构校验，仍是未复核数据，不是检索质量结果。
+  - [~] 已真实导入 10 份 × 4 Chunk 受控档案。此前 50 条 draft 的预诊断发现 15 条同文档题的必需证据标注错误，所有 Recall/MRR/nDCG 与 `HYBRID_CONTEXT` 对照结论均已撤回；修订后不得在该已暴露数据集上继续调参或形成质量结论，需独立新集做冻结验收。
+- [x] RAG 聊天在回答完成时持久化本轮实际检索证据快照，前端历史回放可展开查看来源卡片；历史旧消息保持空证据兼容。
+- [~] 增加证据充分性观察门：已覆盖精确数值、配置/模型、生产事实和绝对断言；2026-09-20 在 v2-hard 开发集达到 20/20，但冻结测试集拒答 Recall=40%，保持 `OBSERVE`，不得切换 `ENFORCE`。测试集不得再用于调参；下一步新建 Gold 版本后比较属性—断言抽取与受控 LLM verifier。
+- [x] 增加结构化路由观察器：同步查询、流式问答与离线检索评测返回/记录 `RETRIEVE`、`CLARIFY`、`ABSTAIN` 建议及固定原因；默认 `OBSERVE`，不改变当前检索与回答。`routing-observer-v1` 固定 4 场景验证无历史指代、带历史指代、无证据和证据不足的建议一致性；这不是用户质量集，也不能启用自动澄清或拒答。
+- [~] 已有 60 条公开资料控制集，验证前排命中与拒答；仍需为真实用户资料建立独立固定集，并完成回答忠实度、引用正确率与引用覆盖率评测。
 - [ ] 对比原问题、Query rewrite、动态 `topK`、阈值和字段过滤。
-- [ ] 将用户资料用于 PREP 出题、Rubric 和追问；LIVE 不执行重型 RAG。
+- [~] PREP 已将 Skill、简历/JD、题目 Rubric 派生成会话能力计划，前端展示计划能力点与证据清单；同一简历与 Skill 的最高三项历史训练任务作为受控“优先复测”输入，实际题单能力点精确匹配时会提升下一场优先级，且记录优先级能力点数。POST 的降级任务及模型汇总重复任务均会按能力点合并，保留全部关联题号，5 表示最高优先级。下一步：用固定跨场序列验证弱项复测覆盖率、重复题率和评分改善。LIVE 仍不执行重型 RAG。
+  - [x] `retest-sequence-v1` 冻结 4 组跨场 PREP 场景（全命中、部分命中、历史去重、无历史）；计划现显式返回并记录 `retestCoverage = 实际复测能力点 ÷ 历史重点能力点`。它验证计划覆盖，尚不代表 LLM 出题或评分改善。
+  - [x] LIVE 默认仅观察：`live-follow-up-v1` 冻结 5 组关键点、回答长度、能力点相关性和重复题检测场景；提交答案会返回建议并记录追问相关率/重复题数，但不会自动跳题或声称自适应训练有效。
 
 进入 M3 的条件：正常回答至少有一个可核验来源，无来源时明确拒答，固定评测集可重复运行。
 
 ### M3：实时 Turn 状态与 Fake Provider
 
-- [ ] 抽取 `VoiceTurnCoordinator`、`VoiceSessionContext`、`VoiceOutboundWriter`、统一事件和指标组件。
-- [ ] 建立 `LISTENING → READY_TO_SUBMIT → THINKING → SPEAKING → COMPLETED` 状态机，支持 `CANCELLED/FAILED`。
-- [ ] 事件统一携带 `sessionId/turnId/eventId/sequence/eventType/createdAt`。
-- [ ] 所有异步回调校验 `turnId`；取消或新 Turn 后丢弃旧结果。
-- [ ] 实现 Fake ASR/LLM/TTS，覆盖超时、重复 final、乱序、空音频、断连和迟到返回。
+- [~] 已抽取 `VoiceTurnCoordinator`、统一事件与 `VoiceTurnOutboundWriter`；后者把浏览器可见 sequence 分配与实际 WebSocket 写出放在同一临界区，40 路虚拟线程替身测试验证实际写出严格为 1—40。`VoiceSessionContext` 尚未抽离。
+- [~] 回复侧已实现 `THINKING → SPEAKING → COMPLETED`，支持 `CANCELLED/FAILED`；录音和提交状态仍沿用现有 SessionState。
+- [x] 回复事件统一携带 `sessionId/turnId/eventId/sequence/eventType/createdAt`。
+- [x] LLM 流、句级 TTS 和有序音频回调在写出前校验当前 Turn；取消或新 Turn 后会丢弃旧结果并计数。
+- [x] 前端提供显式 cancel，服务端返回 cancel ack，并记录服务端确认耗时及用户/断连取消原因；取消请求携带随机 ID，浏览器收到同 ID 确认后仅一次性上报本地往返时延，服务端只消费当前 ID 以拒绝重放。开场题也进入同一 Turn 协议，避免“停止回复”仅停本地播放而没有服务端确认。客户端按每个 Turn 的 `sequence` 丢弃重复或迟到帧，20 次 Fake Provider 取消确认均校验元数据并受本地 P95 < 200ms 门槛保护。
+- [~] 实现 Fake ASR/LLM/TTS，覆盖超时、重复 final、乱序、空音频、断连和迟到返回。已将 ASR final 缓冲抽为独立组件，固定测试覆盖重复 final、扩展 final、迟到 partial 与跨轮清理；真实 Handler 的 Fake Provider 实验已验证空音频不发送 audio、取消后迟到 TTS 不泄漏旧音频、第二句先合成完成时音频仍按句子序号发送、ASR append 断连后重连并重投当前帧、取消后迟到 LLM token/sentence 不写出且不触发 TTS、TTS 超时后 Turn 可结束且不发送半成品音频。新增开场题取消实验验证迟到音频不下发、匹配浏览器确认只记录一次。2026-09-20 本地真实浏览器开场取消得到服务端确认 2.184 ms、浏览器匹配确认往返 8 ms（各 n=1），仅为协议冒烟样本；下一步仍是同配置真实 20 Turn 对照。
 
 进入 M4 的条件：不使用真实 API Key 也能稳定复现并验证取消、超时、乱序、断连和迟到结果。
 

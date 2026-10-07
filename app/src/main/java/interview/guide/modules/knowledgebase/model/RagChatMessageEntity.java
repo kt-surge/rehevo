@@ -1,6 +1,19 @@
 package interview.guide.modules.knowledgebase.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -46,6 +59,12 @@ public class RagChatMessageEntity {
     private String content;
 
     /**
+     * 本条助手回答实际使用的检索证据快照。使用 JSON 文本避免历史会话随着向量库重排而失去可追溯性。
+     */
+    @Column(columnDefinition = "TEXT")
+    private String evidenceJson;
+
+    /**
      * 消息顺序（用于排序）
      */
     @Column(nullable = false)
@@ -66,6 +85,13 @@ public class RagChatMessageEntity {
      * 是否完成（流式响应时使用）
      */
     private Boolean completed = true;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20)
+    private RagGenerationState generationState;
+
+    @Column(length = 40)
+    private String generationErrorCode;
 
     public enum MessageType {
         USER,      // 用户消息

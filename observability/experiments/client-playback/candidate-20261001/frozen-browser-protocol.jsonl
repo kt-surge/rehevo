@@ -1,0 +1,151 @@
+{"kind": "fixture_started", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585489.515, "port": 18087, "scenarios": ["pcm", "html", "cancel", "failure", "pcm"]}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585489.656, "type": "control", "action": "asr_ready", "turnId": null, "sequence": 1}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585489.656, "type": "subtitle", "action": null, "turnId": null, "sequence": 2}
+{"kind": "websocket_closed", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585506.14}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585506.484, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585506.484, "method": "PUT", "path": "/api/voice-interview/sessions/901/resume"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585506.484, "method": "GET", "path": "/api/voice-interview/sessions/901/messages"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585506.484, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585507.0, "type": "control", "action": "asr_ready", "turnId": null, "sequence": 1}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585507.0, "type": "subtitle", "action": null, "turnId": null, "sequence": 2}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.062, "type": "control", "action": "submit", "timestamp": 1790844058781, "data": {"clientRequestId": "27a7611e-77a6-4698-8125-2f1737644963"}}
+{"kind": "turn_scenario", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.078, "mode": "pcm", "turnId": "fixture-turn-1"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.078, "type": "control", "action": "turn_started", "turnId": "fixture-turn-1", "sequence": 3}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.078, "type": "text", "action": null, "turnId": "fixture-turn-1", "sequence": 4}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.234, "type": "text", "action": null, "turnId": "fixture-turn-1", "sequence": 5}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.234, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-1", "sequence": 6}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.25, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-1", "sequence": 7}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.25, "type": "control", "action": "audio_complete", "turnId": "fixture-turn-1", "sequence": 8}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.25, "type": "control", "action": "turn_completed", "turnId": "fixture-turn-1", "sequence": 9}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585519.546, "type": "control", "action": "playback_observed", "timestamp": 1790844059256, "data": {"clientRequestId": "27a7611e-77a6-4698-8125-2f1737644963", "turnId": "fixture-turn-1", "playbackMode": "scheduled_pcm", "submitToAudioReceivedMs": 173.5, "submitToPlaybackStartMs": 474.2999999523163}}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585520.25, "type": "subtitle", "action": null, "turnId": null, "sequence": 10}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585548.968, "type": "control", "action": "submit", "timestamp": 1790844088686, "data": {"clientRequestId": "89c61270-0857-4e04-a676-1240cb58c896"}}
+{"kind": "turn_scenario", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585548.968, "mode": "html", "turnId": "fixture-turn-2"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585548.968, "type": "control", "action": "turn_started", "turnId": "fixture-turn-2", "sequence": 11}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585548.984, "type": "text", "action": null, "turnId": "fixture-turn-2", "sequence": 12}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585549.125, "type": "audio", "action": null, "turnId": "fixture-turn-2", "sequence": 13}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585549.125, "type": "control", "action": "turn_completed", "turnId": "fixture-turn-2", "sequence": 14}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585549.218, "type": "control", "action": "playback_observed", "timestamp": 1790844088923, "data": {"clientRequestId": "89c61270-0857-4e04-a676-1240cb58c896", "turnId": "fixture-turn-2", "playbackMode": "html_playing", "submitToAudioReceivedMs": 158.39999997615814, "submitToPlaybackStartMs": 236.69999992847443}}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585550.14, "type": "subtitle", "action": null, "turnId": null, "sequence": 15}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585634.375, "type": "control", "action": "submit", "timestamp": 1790844174085, "data": {"clientRequestId": "24976788-3948-4910-ad08-37b5b6ba7dc0"}}
+{"kind": "turn_scenario", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585634.375, "mode": "cancel", "turnId": "fixture-turn-3"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585634.375, "type": "control", "action": "turn_started", "turnId": "fixture-turn-3", "sequence": 16}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585634.375, "type": "text", "action": null, "turnId": "fixture-turn-3", "sequence": 17}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585645.937, "type": "control", "action": "cancel", "timestamp": 1790844185656, "data": {"cancelRequestId": "39791081-599a-45ee-8a4d-6c5339bb5ead"}}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585645.937, "type": "control", "action": "turn_cancelled", "turnId": "fixture-turn-3", "sequence": 18}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585646.203, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-3", "sequence": 19}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585646.203, "type": "text", "action": null, "turnId": "fixture-turn-3", "sequence": 20}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585646.203, "type": "subtitle", "action": null, "turnId": null, "sequence": 21}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585646.203, "type": "control", "action": "cancel_acknowledged", "timestamp": 1790844185661, "data": {"cancelRequestId": "39791081-599a-45ee-8a4d-6c5339bb5ead", "clientAckLatencyMs": 5}}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585745.562, "type": "control", "action": "submit", "timestamp": 1790844285277, "data": {"clientRequestId": "02ad544f-75c1-4e7f-bdfc-c4161c7020d5"}}
+{"kind": "turn_scenario", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585745.562, "mode": "failure", "turnId": "fixture-turn-4"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585745.562, "type": "control", "action": "turn_started", "turnId": "fixture-turn-4", "sequence": 22}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585745.562, "type": "text", "action": null, "turnId": "fixture-turn-4", "sequence": 23}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585745.718, "type": "control", "action": "turn_failed", "turnId": "fixture-turn-4", "sequence": 24}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585745.984, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-4", "sequence": 25}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585745.984, "type": "text", "action": null, "turnId": "fixture-turn-4", "sequence": 26}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585747.0, "type": "subtitle", "action": null, "turnId": null, "sequence": 27}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585767.875, "type": "control", "action": "submit", "timestamp": 1790844307588, "data": {"clientRequestId": "7c934201-700d-4283-a1aa-febaae9d1bc6"}}
+{"kind": "turn_scenario", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585767.875, "mode": "pcm", "turnId": "fixture-turn-5"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585767.875, "type": "control", "action": "turn_started", "turnId": "fixture-turn-5", "sequence": 28}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585767.875, "type": "text", "action": null, "turnId": "fixture-turn-5", "sequence": 29}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585768.046, "type": "text", "action": null, "turnId": "fixture-turn-5", "sequence": 30}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585768.046, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-5", "sequence": 31}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585768.046, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-5", "sequence": 32}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585768.046, "type": "control", "action": "audio_complete", "turnId": "fixture-turn-5", "sequence": 33}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585768.046, "type": "control", "action": "turn_completed", "turnId": "fixture-turn-5", "sequence": 34}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585768.046, "type": "control", "action": "playback_observed", "timestamp": 1790844307759, "data": {"clientRequestId": "7c934201-700d-4283-a1aa-febaae9d1bc6", "turnId": "fixture-turn-5", "playbackMode": "scheduled_pcm", "submitToAudioReceivedMs": 170.69999992847443, "submitToPlaybackStartMs": 170.89999997615814}}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585769.062, "type": "subtitle", "action": null, "turnId": null, "sequence": 35}
+{"kind": "websocket_closed", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585800.89}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585800.89, "method": "PUT", "path": "/api/voice-interview/sessions/901/pause"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585800.89, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585892.125, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585892.125, "method": "PUT", "path": "/api/voice-interview/sessions/901/resume"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585892.125, "method": "GET", "path": "/api/voice-interview/sessions/901/messages"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585892.125, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585892.656, "type": "control", "action": "asr_ready", "turnId": null, "sequence": 1}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585892.656, "type": "subtitle", "action": null, "turnId": null, "sequence": 2}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585898.843, "type": "control", "action": "submit", "timestamp": 1790844438550, "data": {"clientRequestId": "4ecdf1d6-5f95-4e52-927c-746e408db8a4"}}
+{"kind": "turn_scenario", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585898.843, "mode": "pcm", "turnId": "fixture-turn-6"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585898.843, "type": "control", "action": "turn_started", "turnId": "fixture-turn-6", "sequence": 3}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585898.843, "type": "text", "action": null, "turnId": "fixture-turn-6", "sequence": 4}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585899.0, "type": "text", "action": null, "turnId": "fixture-turn-6", "sequence": 5}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585899.0, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-6", "sequence": 6}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585899.0, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-6", "sequence": 7}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585899.0, "type": "control", "action": "audio_complete", "turnId": "fixture-turn-6", "sequence": 8}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585899.0, "type": "control", "action": "turn_completed", "turnId": "fixture-turn-6", "sequence": 9}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585899.328, "type": "control", "action": "playback_observed", "timestamp": 1790844439040, "data": {"clientRequestId": "4ecdf1d6-5f95-4e52-927c-746e408db8a4", "turnId": "fixture-turn-6", "playbackMode": "scheduled_pcm", "submitToAudioReceivedMs": 165.60000002384186, "submitToPlaybackStartMs": 489.60000002384186}}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 585900.015, "type": "subtitle", "action": null, "turnId": null, "sequence": 10}
+{"kind": "websocket_closed", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586232.968}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586232.984, "method": "PUT", "path": "/api/voice-interview/sessions/901/pause"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586232.984, "method": "GET", "path": "/api/resumes"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586232.984, "method": "GET", "path": "/api/resumes"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586235.109, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586235.125, "method": "GET", "path": "/api/resumes"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586235.125, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586235.14, "method": "GET", "path": "/api/resumes"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586235.156, "method": "GET", "path": "/api/interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586235.156, "method": "GET", "path": "/api/voice-interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586235.171, "method": "GET", "path": "/api/interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586235.171, "method": "GET", "path": "/api/voice-interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586238.671, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586238.687, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586238.687, "method": "GET", "path": "/api/interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586238.687, "method": "GET", "path": "/api/voice-interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586238.687, "method": "GET", "path": "/api/interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586238.687, "method": "GET", "path": "/api/voice-interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586244.515, "method": "PUT", "path": "/api/voice-interview/sessions/901/resume"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586244.515, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586244.515, "method": "GET", "path": "/api/voice-interview/sessions/901/messages"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586244.531, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586245.031, "type": "control", "action": "asr_ready", "turnId": null, "sequence": 1}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586245.031, "type": "subtitle", "action": null, "turnId": null, "sequence": 2}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.296, "type": "control", "action": "submit", "timestamp": 1790844800009, "data": {"clientRequestId": "3c9ebdfe-20bd-453e-ad50-3d0bcfe5ab84"}}
+{"kind": "turn_scenario", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.296, "mode": "pcm", "turnId": "fixture-turn-7"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.296, "type": "control", "action": "turn_started", "turnId": "fixture-turn-7", "sequence": 3}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.296, "type": "text", "action": null, "turnId": "fixture-turn-7", "sequence": 4}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.468, "type": "text", "action": null, "turnId": "fixture-turn-7", "sequence": 5}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.468, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-7", "sequence": 6}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.468, "type": "audio_chunk", "action": null, "turnId": "fixture-turn-7", "sequence": 7}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.468, "type": "control", "action": "audio_complete", "turnId": "fixture-turn-7", "sequence": 8}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.468, "type": "control", "action": "turn_completed", "turnId": "fixture-turn-7", "sequence": 9}
+{"kind": "client_control", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586260.468, "type": "control", "action": "playback_observed", "timestamp": 1790844800183, "data": {"clientRequestId": "3c9ebdfe-20bd-453e-ad50-3d0bcfe5ab84", "turnId": "fixture-turn-7", "playbackMode": "scheduled_pcm", "submitToAudioReceivedMs": 173.20000004768372, "submitToPlaybackStartMs": 174}}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586261.484, "type": "subtitle", "action": null, "turnId": null, "sequence": 10}
+{"kind": "websocket_closed", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586268.781}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586268.796, "method": "PUT", "path": "/api/voice-interview/sessions/901/pause"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586268.796, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586268.796, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586268.812, "method": "GET", "path": "/api/interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586268.812, "method": "GET", "path": "/api/voice-interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586268.812, "method": "GET", "path": "/api/interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586268.812, "method": "GET", "path": "/api/voice-interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586272.781, "method": "PUT", "path": "/api/voice-interview/sessions/901/resume"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586272.781, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586272.796, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586272.796, "method": "GET", "path": "/api/voice-interview/sessions/901/messages"}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586273.296, "type": "control", "action": "asr_ready", "turnId": null, "sequence": 1}
+{"kind": "server_event", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586273.296, "type": "subtitle", "action": null, "turnId": null, "sequence": 2}
+{"kind": "websocket_closed", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586276.937}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586276.937, "method": "PUT", "path": "/api/voice-interview/sessions/901/pause"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586276.937, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586276.937, "method": "GET", "path": "/api/interview/skills"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586276.953, "method": "GET", "path": "/api/interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586276.953, "method": "GET", "path": "/api/voice-interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586276.953, "method": "GET", "path": "/api/interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586276.953, "method": "GET", "path": "/api/voice-interview/sessions"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586278.312, "method": "GET", "path": "/api/interview-schedule"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586278.312, "method": "GET", "path": "/api/interview-schedule"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586286.218, "method": "GET", "path": "/api/knowledgebase/stats"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586286.218, "method": "GET", "path": "/api/knowledgebase/list"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586286.234, "method": "GET", "path": "/api/knowledgebase/categories"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586286.234, "method": "GET", "path": "/api/knowledgebase/stats"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586286.234, "method": "GET", "path": "/api/knowledgebase/list"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586286.234, "method": "GET", "path": "/api/knowledgebase/categories"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586300.046, "method": "GET", "path": "/api/interview-schedule"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586300.062, "method": "GET", "path": "/api/interview-schedule"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586301.687, "method": "GET", "path": "/api/knowledgebase/stats"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586301.687, "method": "GET", "path": "/api/knowledgebase/list"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586301.687, "method": "GET", "path": "/api/knowledgebase/categories"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586301.687, "method": "GET", "path": "/api/knowledgebase/stats"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586301.687, "method": "GET", "path": "/api/knowledgebase/categories"}
+{"kind": "http", "evidenceType": "controlled_browser_protocol", "monotonicSeconds": 586301.687, "method": "GET", "path": "/api/knowledgebase/list"}

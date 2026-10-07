@@ -1,0 +1,87 @@
+{
+  "reports": {
+    "baseline": {
+      "usage": {
+        "input": 2800.0,
+        "output": 680.0,
+        "total": 3480.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operation counts are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 1,
+        "followUps": 0,
+        "requestedCategory": "MQ",
+        "actualType": "MQ",
+        "typeMatches": true,
+        "trainingTargetIds": [
+          "training:c4cf8a93-ad4d-33f6-b83f-4009fe328721"
+        ],
+        "targetIdsValid": true,
+        "rawRubricLevels": 5,
+        "actualReferenceChars": 1304,
+        "actualProductSessionWrites": 0,
+        "semanticQualityGate": "HOLD pending separate semantic and fixed-answer scoring review",
+        "scopeUnchanged": true,
+        "formalEffectOrLatency": false
+      },
+      "result": {
+        "invokerOperations": 1,
+        "formalEffectOrLatency": false,
+        "elapsedMs": 14532.2262,
+        "status": "finished"
+      }
+    },
+    "candidate": {
+      "usage": {
+        "input": 3015.0,
+        "output": 650.0,
+        "total": 3665.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operation counts are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 1,
+        "followUps": 0,
+        "requestedCategory": "MQ",
+        "actualType": "MQ",
+        "typeMatches": true,
+        "trainingTargetIds": [
+          "training:c4cf8a93-ad4d-33f6-b83f-4009fe328721"
+        ],
+        "targetIdsValid": true,
+        "rawRubricLevels": 5,
+        "actualReferenceChars": 1770,
+        "actualProductSessionWrites": 0,
+        "semanticQualityGate": "HOLD pending separate semantic and fixed-answer scoring review",
+        "scopeUnchanged": true,
+        "formalEffectOrLatency": false
+      },
+      "result": {
+        "status": "finished",
+        "elapsedMs": 13491.0462,
+        "formalEffectOrLatency": false,
+        "invokerOperations": 1
+      }
+    }
+  },
+  "integrity": {
+    "inputByteIdentical": true,
+    "promptOutsideReferenceEqual": true,
+    "systemAndSecuritySuffixEqual": true,
+    "onlyActualReferenceSectionDiffers": true,
+    "randomBoundaryAndCrlfOnlyNormalization": true,
+    "case": "mq-commit",
+    "order": "BA",
+    "exposedDevelopmentDiagnostic": true,
+    "noFormalQualityOrLatencyClaim": true
+  }
+}

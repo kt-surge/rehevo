@@ -1,0 +1,30 @@
+{
+  "note": "Candidate source fingerprints after final full regression. Existing dirty workspace preserved.",
+  "head": "1abb8a373510909bc726d254deecb6b6d501f976",
+  "sources": [
+    {
+      "path": "app\\src\\main\\java\\interview\\guide\\modules\\voiceinterview\\service\\DashscopeLlmService.java",
+      "sha256": "45ecadc4b5180dc10249c7f91d0b2d4baefbd3639cb874942fd94ee098dce6a9"
+    },
+    {
+      "path": "app\\src\\main\\java\\interview\\guide\\modules\\voiceinterview\\service\\VoiceTextAccumulator.java",
+      "sha256": "1b6a6a48c794d4a738b78ee80591e308b1273387f3cf7591248d60ceeb24de0a"
+    },
+    {
+      "path": "app\\src\\main\\java\\interview\\guide\\modules\\voiceinterview\\handler\\VoiceInterviewWebSocketHandler.java",
+      "sha256": "b255b2f0e92cae1c73371bf2c41bd419543149ea8ff15566362eb455880484b8"
+    },
+    {
+      "path": "app\\src\\test\\java\\interview\\guide\\modules\\voiceinterview\\service\\DashscopeLlmServiceTest.java",
+      "sha256": "245c0349c3e2f2570b139204ca86e392ebceb83f3bb6cfe9f2572b4afd402fc0"
+    },
+    {
+      "path": "app\\src\\test\\java\\interview\\guide\\modules\\voiceinterview\\service\\VoiceTextAccumulatorTest.java",
+      "sha256": "c4b74ebe3e2d5a8231ffffa34e3ff8970610b0afcfb4ca5f5ea2301960ccbd61"
+    },
+    {
+      "path": "app\\src\\test\\java\\interview\\guide\\modules\\voiceinterview\\handler\\VoiceInterviewWebSocketHandlerFakeProviderTest.java",
+      "sha256": "2d6d6ba9ddd119b8f0384abce519d4e3a379b093cc24f829f06027e5c8d79ecd"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def experimentDir = new File(gradle.rootProject.projectDir, 'observability/experiments/rag-evaluation')
+    def outputClasses = appProject.layout.buildDirectory.dir('rag-identifier-component/classes')
+    appProject.tasks.register('compileIdentifierComponent', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(experimentDir, 'IdentifierSelectionComponentBenchmark.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = outputClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('identifierComponent', JavaExec) {
+        dependsOn 'compileIdentifierComponent'
+        classpath = appProject.files(outputClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.modules.knowledgebase.service.IdentifierSelectionComponentBenchmark'
+        workingDir gradle.rootProject.projectDir
+        args appProject.findProperty('identifierInput'), appProject.findProperty('identifierOutput')
+    }
+}

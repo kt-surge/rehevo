@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="LLM Provider Registry Test" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:14.422Z" hostname="LAPTOP-BT5MEUFJ" time="1.508">
+  <properties/>
+  <testcase name="Successfully get default ChatClient" classname="interview.guide.common.ai.LlmProviderRegistryTest" time="1.443"/>
+  <testcase name="不同 ChatClient 配方共享同一个 provider 级 ChatModel" classname="interview.guide.common.ai.LlmProviderRegistryTest" time="0.025"/>
+  <testcase name="Verify that ChatClients are cached" classname="interview.guide.common.ai.LlmProviderRegistryTest" time="0.008"/>
+  <testcase name="Throw exception for unknown provider" classname="interview.guide.common.ai.LlmProviderRegistryTest" time="0.007"/>
+  <testcase name="Successfully get ChatClient for a valid provider" classname="interview.guide.common.ai.LlmProviderRegistryTest" time="0.006"/>
+  <testcase name="reload clears cache and allows re-creation" classname="interview.guide.common.ai.LlmProviderRegistryTest" time="0.01"/>
+  <system-out><![CDATA[16:50:15.848 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: dashscope
+16:50:15.849 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: dashscope
+16:50:15.849 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: dashscope, BaseUrl: https://dashscope.aliyuncs.com/compatible-mode/v1, Model: qwen3.5-flash
+16:50:15.876 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: test-provider
+16:50:15.876 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: test-provider
+16:50:15.876 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: test-provider, BaseUrl: http://localhost:1234/v1, Model: test-model
+16:50:15.880 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Created plain ChatClient (no tools) for test-provider
+16:50:15.882 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Created voice ChatClient (SkillsTool + streaming ToolCall) for test-provider
+16:50:15.900 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: test-provider
+16:50:15.901 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: test-provider
+16:50:15.901 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: test-provider, BaseUrl: http://localhost:1234/v1, Model: test-model
+16:50:15.911 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: unknown
+16:50:15.912 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: unknown
+16:50:15.912 [Test worker] ERROR interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Provider config not found: unknown
+16:50:15.917 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: test-provider
+16:50:15.917 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: test-provider
+16:50:15.917 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: test-provider, BaseUrl: http://localhost:1234/v1, Model: test-model
+16:50:15.923 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: test-provider
+16:50:15.923 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: test-provider
+16:50:15.924 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: test-provider, BaseUrl: http://localhost:1234/v1, Model: test-model
+16:50:15.927 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Cache cleared (2 entries). Next access will re-create clients.
+16:50:15.927 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new client for provider: test-provider
+16:50:15.927 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Creating new ChatModel for provider: test-provider
+16:50:15.927 [Test worker] INFO interview.guide.common.ai.LlmProviderRegistry -- [LlmProviderRegistry] Building ChatModel - Provider: test-provider, BaseUrl: http://localhost:1234/v1, Model: test-model
+]]></system-out>
+  <system-err><![CDATA[Mockito is currently self-attaching to enable the inline-mock-maker. This will no longer work in future releases of the JDK. Please add Mockito as an agent to your build as described in Mockito's documentation: https://javadoc.io/doc/org.mockito/mockito-core/latest/org.mockito/org/mockito/Mockito.html#0.3
+WARNING: A Java agent has been loaded dynamically (C:\Users\yngtao\.gradle\caches\modules-2\files-2.1\net.bytebuddy\byte-buddy-agent\1.18.10\9426d28828bdcdf42666bb7a68c468279ea78f59\byte-buddy-agent-1.18.10.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>

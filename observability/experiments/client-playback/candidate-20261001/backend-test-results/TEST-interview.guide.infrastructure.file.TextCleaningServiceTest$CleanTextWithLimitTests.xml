@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="cleanTextWithLimit() 测试" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:19.355Z" hostname="LAPTOP-BT5MEUFJ" time="0.002">
+  <properties/>
+  <testcase name="文本长度超过限制应截断" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextWithLimitTests" time="0.0"/>
+  <testcase name="文本长度在限制内应完整返回" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextWithLimitTests" time="0.0"/>
+  <testcase name="清理后再截断" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextWithLimitTests" time="0.0"/>
+  <testcase name="空内容应返回空字符串" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextWithLimitTests" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

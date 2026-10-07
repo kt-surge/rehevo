@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="baseUrl 包含版本段识别" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:12.098Z" hostname="LAPTOP-BT5MEUFJ" time="0.073">
+  <properties/>
+  <testcase name="OpenAI 原生 base-url（不含版本段）返回 false" classname="interview.guide.common.ai.ApiPathResolverTest$ContainsVersion" time="0.067"/>
+  <testcase name="以 /v1 结尾（Kimi / DeepSeek / SiliconFlow / DashScope 兼容模式）返回 true" classname="interview.guide.common.ai.ApiPathResolverTest$ContainsVersion" time="0.0"/>
+  <testcase name="null / 空串返回 false" classname="interview.guide.common.ai.ApiPathResolverTest$ContainsVersion" time="0.001"/>
+  <testcase name="末尾带 / 或空白不影响识别" classname="interview.guide.common.ai.ApiPathResolverTest$ContainsVersion" time="0.0"/>
+  <testcase name="以 /v3 /v4 等非 v1 版本段结尾（豆包 Ark / 智谱 GLM）返回 true" classname="interview.guide.common.ai.ApiPathResolverTest$ContainsVersion" time="0.0"/>
+  <testcase name="版本段在中段而不在末尾（后面还有其它 path）返回 false" classname="interview.guide.common.ai.ApiPathResolverTest$ContainsVersion" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

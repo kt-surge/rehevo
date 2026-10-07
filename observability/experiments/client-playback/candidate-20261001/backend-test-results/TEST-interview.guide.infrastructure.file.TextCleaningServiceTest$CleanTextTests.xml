@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="cleanText() 测试" tests="17" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:19.357Z" hostname="LAPTOP-BT5MEUFJ" time="0.013">
+  <properties/>
+  <testcase name="保留换行符和制表符" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="综合清理测试" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="压缩连续空行" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="清理分隔线" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="去除行尾空格" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="统一换行符" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="清理图片文件名行" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.001"/>
+  <testcase name="清理文件协议路径" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="清理图片 URL" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.001"/>
+  <testcase name="清理控制字符" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.001"/>
+  <testcase name="[1] input = null" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.001"/>
+  <testcase name="[2] input = &quot;&quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="[3] input = &quot;   &quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="[4] input = &quot;\n&quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.001"/>
+  <testcase name="[5] input = &quot;\t&quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="[6] input = &quot;  \n  \t  &quot;" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <testcase name="不应清理正文中的图片文件名字符串" classname="interview.guide.infrastructure.file.TextCleaningServiceTest$CleanTextTests" time="0.0"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

@@ -1,5 +1,7 @@
 package interview.guide.modules.knowledgebase.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
 import interview.guide.infrastructure.mapper.KnowledgeBaseMapper;
@@ -10,7 +12,12 @@ import interview.guide.modules.knowledgebase.model.RagChatDTO.CreateSessionReque
 import interview.guide.modules.knowledgebase.model.RagChatDTO.SessionDTO;
 import interview.guide.modules.knowledgebase.model.RagChatDTO.SessionDetailDTO;
 import interview.guide.modules.knowledgebase.model.RagChatDTO.SessionListItemDTO;
+import interview.guide.modules.knowledgebase.model.RagChatDTO.MessageDTO;
+import interview.guide.modules.knowledgebase.model.RagChatDTO.RetrievalEvidenceDTO;
 import interview.guide.modules.knowledgebase.model.RagChatMessageEntity;
+import interview.guide.modules.knowledgebase.model.RagGenerationState;
+import interview.guide.modules.knowledgebase.model.RagStreamEventDTO;
+import interview.guide.modules.knowledgebase.model.QueryResponse;
 import interview.guide.modules.knowledgebase.model.RagChatSessionEntity;
 import interview.guide.modules.knowledgebase.repository.KnowledgeBaseRepository;
 import interview.guide.modules.knowledgebase.repository.RagChatMessageRepository;
@@ -23,7 +30,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
 
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +50,7 @@ public class RagChatSessionService {
     private final RagChatMapper ragChatMapper;
     private final KnowledgeBaseMapper knowledgeBaseMapper;
     private final KnowledgeBaseQueryProperties queryProperties;
+    private final ObjectMapper objectMapper;
 
     /**
      * 创建新会话
@@ -101,7 +108,14 @@ public class RagChatSessionService {
             new java.util.ArrayList<>(session.getKnowledgeBases())
         );
 
-        return ragChatMapper.toSessionDetailDTO(session, messages, kbDTOs);
+        List<MessageDTO> messageDTOs = messages.stream()
+            .map(this::toMessageDTO)
+            .toList();
+
+        return new SessionDetailDTO(
+            session.getId(), session.getTitle(), kbDTOs, messageDTOs,
+            session.getCreatedAt(), session.getUpdatedAt()
+        );
     }
 
     /**
@@ -111,7 +125,7 @@ public class RagChatSessionService {
      */
     @Transactional
     public Long prepareStreamMessage(Long sessionId, String question) {
-        RagChatSessionEntity session = sessionRepository.findByIdWithKnowledgeBases(sessionId)
+        RagChatSessionEntity session = sessionRepository.findByIdForUpdate(sessionId)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "会话不存在"));
 
         // 获取当前消息数量作为起始顺序
@@ -133,6 +147,7 @@ public class RagChatSessionService {
         assistantMessage.setContent("");
         assistantMessage.setMessageOrder(nextOrder + 1);
         assistantMessage.setCompleted(false);
+        assistantMessage.setGenerationState(RagGenerationState.GENERATING);
         assistantMessage = messageRepository.save(assistantMessage);
 
         // 更新会话消息数量
@@ -148,21 +163,33 @@ public class RagChatSessionService {
      * 流式响应完成后更新消息
      */
     @Transactional
-    public void completeStreamMessage(Long messageId, String content) {
-        RagChatMessageEntity message = messageRepository.findById(messageId)
-            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "消息不存在"));
-
+    public RagGenerationState finishStreamMessage(Long messageId, String content,
+            List<QueryResponse.RetrievalEvidence> evidence, RagGenerationState state, String errorCode) {
+        if (state == null || state == RagGenerationState.GENERATING) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "终止状态无效");
+        }
+        var found = messageRepository.findByIdForUpdate(messageId);
+        if (found.isEmpty()) {
+            return null;
+        }
+        RagChatMessageEntity message = found.get();
+        if (message.getGenerationState() != RagGenerationState.GENERATING) {
+            return message.getGenerationState();
+        }
         message.setContent(content);
-        message.setCompleted(true);
-        messageRepository.save(message);
-
-        log.info("完成流式消息: messageId={}, contentLength={}", messageId, content.length());
+        message.setEvidenceJson(writeEvidence(evidence));
+        message.setGenerationState(state);
+        message.setGenerationErrorCode(errorCode);
+        message.setCompleted(state == RagGenerationState.COMPLETED);
+        messageRepository.saveAndFlush(message);
+        log.info("保存 RAG 终止状态: messageId={}, state={}, contentLength={}", messageId, state, content.length());
+        return state;
     }
 
     /**
      * 获取流式回答（带多轮上下文）
      */
-    public Flux<String> getStreamAnswer(Long sessionId, String question) {
+    public KnowledgeBaseQueryService.StreamAnswer getStreamAnswer(Long sessionId, String question) {
         RagChatSessionEntity session = sessionRepository.findByIdWithKnowledgeBases(sessionId)
             .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "会话不存在"));
 
@@ -171,7 +198,18 @@ public class RagChatSessionService {
             ? loadHistoryMessages(sessionId) : List.of();
 
         log.info("加载历史上下文: sessionId={}, historySize={}", sessionId, history.size());
-        return queryService.answerQuestionStream(kbIds, question, history);
+        return queryService.answerQuestionStreamWithEvidence(kbIds, question, history);
+    }
+
+    public RagStreamEventDTO getStreamTerminal(Long sessionId, Long messageId) {
+        RagChatMessageEntity message = messageRepository.findById(messageId)
+            .filter(item -> sessionId.equals(item.getSession().getId()))
+            .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "消息不存在"));
+        if (message.getGenerationState() == RagGenerationState.GENERATING) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "生成资源不在当前实例，请在原连接所属实例停止");
+        }
+        return RagStreamEventDTO.terminal(messageId, message.getGenerationState(),
+            message.getGenerationErrorCode(), "回答已经结束");
     }
 
     /**
@@ -236,12 +274,23 @@ public class RagChatSessionService {
 
     // ========== 私有方法 ==========
 
+    private MessageDTO toMessageDTO(RagChatMessageEntity message) {
+        List<RetrievalEvidenceDTO> evidence = readEvidence(message.getEvidenceJson());
+        return new MessageDTO(message.getId(), message.getTypeString(), message.getContent(),
+            message.getCreatedAt(), evidence, RagCitationValidator.check(message.getContent(),
+                evidence.stream().map(RetrievalEvidenceDTO::evidenceId).toList()), message.getCompleted(),
+            message.getGenerationState(), message.getGenerationErrorCode());
+    }
+
     /**
      * 加载会话中最近的历史消息作为多轮上下文。
-     * 排除当前轮的 user 消息（prepareStreamMessage 中 completed=true 但尚未回答）。
+     * Repository 只取完整成功问答对，当前问题及失败/取消问题均不会加入。
      */
     private List<Message> loadHistoryMessages(Long sessionId) {
-        int limit = queryProperties.getHistory().getMaxMessages() + 1;
+        int limit = queryProperties.getHistory().getMaxMessages() / 2 * 2;
+        if (limit <= 0) {
+            return List.of();
+        }
         List<RagChatMessageEntity> recent = messageRepository
             .findRecentCompletedBySessionId(sessionId, PageRequest.of(0, limit));
 
@@ -249,13 +298,8 @@ public class RagChatSessionService {
             return List.of();
         }
 
-        // 查询结果按 messageOrder DESC 排列，最后一条（DESC 首条）是当前轮的 user 消息，排除
-        List<RagChatMessageEntity> historyMessages = recent.size() <= 1
-            ? List.of()
-            : recent.subList(1, recent.size());
-
         // 反转为正序（时间从早到晚）
-        return historyMessages.reversed().stream()
+        return recent.reversed().stream()
             .map(m -> m.getType() == RagChatMessageEntity.MessageType.USER
                 ? (Message) new UserMessage(m.getContent())
                 : (Message) new AssistantMessage(m.getContent()))
@@ -270,5 +314,36 @@ public class RagChatSessionService {
             return knowledgeBases.getFirst().getName();
         }
         return knowledgeBases.size() + " 个知识库对话";
+    }
+
+    private String writeEvidence(
+            List<QueryResponse.RetrievalEvidence> evidence) {
+        if (evidence == null || evidence.isEmpty()) {
+            return null;
+        }
+        List<RetrievalEvidenceDTO> snapshots = evidence.stream()
+            .map(item -> new RetrievalEvidenceDTO(
+                item.knowledgeBaseId(), item.documentSha256(), item.chunkIndex(), item.finalRank(),
+                item.retrievalSources(), item.contentPreview(), item.originalFilename(), item.contentType(),
+                item.evidenceId()
+            ))
+            .toList();
+        try {
+            return objectMapper.writeValueAsString(snapshots);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.INTERNAL_ERROR, "回答来源保存失败", e);
+        }
+    }
+
+    private List<RetrievalEvidenceDTO> readEvidence(String evidenceJson) {
+        if (evidenceJson == null || evidenceJson.isBlank()) {
+            return List.of();
+        }
+        try {
+            return objectMapper.readValue(evidenceJson, new TypeReference<List<RetrievalEvidenceDTO>>() {});
+        } catch (Exception e) {
+            log.warn("无法读取 RAG 证据快照: {}", e.getMessage(), e);
+            return List.of();
+        }
     }
 }

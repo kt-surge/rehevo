@@ -1,0 +1,21 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def projectRoot = gradle.rootProject.projectDir
+    def runner = appProject.layout.buildDirectory.dir('reference-context/runner')
+    appProject.tasks.register('compileReferenceContextAudit', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/interview-adaptation/ReferenceContextAuditMain.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = runner
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('referenceContextAudit', JavaExec) {
+        dependsOn 'compileReferenceContextAudit'
+        classpath = appProject.files(runner) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.modules.interview.skill.ReferenceContextAuditMain'
+        workingDir projectRoot
+        systemProperty 'context.repository', projectRoot
+        systemProperty 'context.output', appProject.findProperty('contextOutput')
+        systemProperty 'context.candidateSource', appProject.findProperty('contextCandidateSource') ?: 'reference-facts-source-candidate-20261006-r1'
+    }
+}

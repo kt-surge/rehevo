@@ -92,25 +92,27 @@ public class AnalyzeStreamConsumer extends AbstractStreamConsumer<AnalyzeStreamC
     }
 
     @Override
-    protected void markProcessing(AnalyzePayload payload) {
+    protected boolean markProcessing(AnalyzePayload payload) {
         updateAnalyzeStatus(payload.resumeId(), AsyncTaskStatus.PROCESSING, null);
+        return true;
     }
 
     @Override
-    protected void processBusiness(AnalyzePayload payload) {
+    protected BusinessResult processBusiness(AnalyzePayload payload) {
         Long resumeId = payload.resumeId();
         if (!resumeRepository.existsById(resumeId)) {
             log.warn("简历已被删除，跳过分析任务: resumeId={}", resumeId);
-            return;
+            return BusinessResult.SKIPPED;
         }
 
         ResumeAnalysisResponse analysis = gradingService.analyzeResume(payload.content());
         ResumeEntity resume = resumeRepository.findById(resumeId).orElse(null);
         if (resume == null) {
             log.warn("简历在分析期间被删除，跳过保存结果: resumeId={}", resumeId);
-            return;
+            return BusinessResult.SKIPPED;
         }
         persistenceService.saveAnalysis(resume, analysis);
+        return BusinessResult.COMPLETED;
     }
 
     @Override
@@ -119,12 +121,13 @@ public class AnalyzeStreamConsumer extends AbstractStreamConsumer<AnalyzeStreamC
     }
 
     @Override
-    protected void markFailed(AnalyzePayload payload, String error) {
+    protected boolean markFailed(AnalyzePayload payload, String error) {
         updateAnalyzeStatus(payload.resumeId(), AsyncTaskStatus.FAILED, error);
+        return true;
     }
 
     @Override
-    protected void retryMessage(AnalyzePayload payload, int retryCount) {
+    protected RetryResult retryMessage(AnalyzePayload payload, int retryCount) {
         Long resumeId = payload.resumeId();
         String content = payload.content();
         try {
@@ -140,10 +143,12 @@ public class AnalyzeStreamConsumer extends AbstractStreamConsumer<AnalyzeStreamC
                 AsyncTaskStreamConstants.STREAM_MAX_LEN
             );
             log.info("简历分析任务已重新入队: resumeId={}, retryCount={}", resumeId, retryCount);
+            return RetryResult.ENQUEUED;
 
         } catch (Exception e) {
             log.error("重试入队失败: resumeId={}, error={}", resumeId, e.getMessage(), e);
             updateAnalyzeStatus(resumeId, AsyncTaskStatus.FAILED, truncateError("重试入队失败: " + e.getMessage()));
+            return RetryResult.FAILED;
         }
     }
 
@@ -151,16 +156,12 @@ public class AnalyzeStreamConsumer extends AbstractStreamConsumer<AnalyzeStreamC
      * 更新分析状态
      */
     private void updateAnalyzeStatus(Long resumeId, AsyncTaskStatus status, String error) {
-        try {
-            resumeRepository.findById(resumeId).ifPresent(resume -> {
-                resume.setAnalyzeStatus(status);
-                resume.setAnalyzeError(error);
-                resumeRepository.save(resume);
-                log.debug("分析状态已更新: resumeId={}, status={}", resumeId, status);
-            });
-        } catch (Exception e) {
-            log.error("更新分析状态失败: resumeId={}, status={}, error={}", resumeId, status, e.getMessage(), e);
-        }
+      resumeRepository.findById(resumeId).ifPresent(resume -> {
+        resume.setAnalyzeStatus(status);
+        resume.setAnalyzeError(error);
+        resumeRepository.save(resume);
+        log.debug("分析状态已更新: resumeId={}, status={}", resumeId, status);
+      });
     }
 
 }

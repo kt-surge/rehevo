@@ -63,15 +63,20 @@ public class KnowledgeBaseEntity {
 
     // 向量化状态（新上传时为 PENDING，异步处理完成后变为 COMPLETED）
     @Enumerated(EnumType.STRING)
-    @Column(length = 20)
+    @Column(length = 20, updatable = false)
     private VectorStatus vectorStatus = VectorStatus.PENDING;
 
     // 向量化错误信息（失败时记录）
-    @Column(length = 500)
+    @Column(length = 500, updatable = false)
     private String vectorError;
 
     // 向量分块数量
+    @Column(updatable = false)
     private Integer chunkCount = 0;
+
+    // 任务字段只通过带请求版本的条件更新写入，普通元数据保存不能回写旧状态。
+    @Column(length = 36, updatable = false)
+    private String vectorGeneration;
     
     @PrePersist
     protected void onCreate() {
@@ -218,5 +223,12 @@ public class KnowledgeBaseEntity {
     public void setChunkCount(Integer chunkCount) {
         this.chunkCount = chunkCount;
     }
-}
 
+    public String getVectorGeneration() {
+      return vectorGeneration;
+    }
+
+    public void setVectorGeneration(String vectorGeneration) {
+      this.vectorGeneration = vectorGeneration;
+    }
+}

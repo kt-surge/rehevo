@@ -2,85 +2,66 @@ package interview.guide.modules.knowledgebase.listener;
 
 import interview.guide.common.async.AbstractStreamProducer;
 import interview.guide.common.constant.AsyncTaskStreamConstants;
+import interview.guide.common.exception.BusinessException;
+import interview.guide.common.exception.ErrorCode;
 import interview.guide.common.metrics.ApplicationMetrics;
 import interview.guide.infrastructure.redis.RedisService;
-import interview.guide.modules.knowledgebase.model.VectorStatus;
-import interview.guide.modules.knowledgebase.repository.KnowledgeBaseRepository;
-import lombok.extern.slf4j.Slf4j;
+import interview.guide.modules.knowledgebase.service.KnowledgeBaseVectorTaskService;
+import interview.guide.modules.knowledgebase.model.VectorTaskInput;
+import interview.guide.modules.knowledgebase.model.VectorTaskDeliveryDTO;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
-/**
- * 向量化任务生产者
- * 负责发送向量化任务到 Redis Stream
- */
-@Slf4j
+/** 分配新请求版本的事务返回之后才调用 Redis，重试消息沿用原版本。 */
 @Component
 public class VectorizeStreamProducer extends AbstractStreamProducer<VectorizeStreamProducer.VectorizeTaskPayload> {
+  private final KnowledgeBaseVectorTaskService taskService;
+  record VectorizeTaskPayload(Long kbId, String content, String generation) {}
 
-    private final KnowledgeBaseRepository knowledgeBaseRepository;
+  public VectorizeStreamProducer(RedisService redis, ApplicationMetrics metrics,
+      KnowledgeBaseVectorTaskService taskService) {
+    super(redis, metrics);
+    this.taskService = taskService;
+  }
 
-    record VectorizeTaskPayload(Long kbId, String content) {}
-
-    public VectorizeStreamProducer(
-        RedisService redisService,
-        ApplicationMetrics applicationMetrics,
-        KnowledgeBaseRepository knowledgeBaseRepository
-    ) {
-        super(redisService, applicationMetrics);
-        this.knowledgeBaseRepository = knowledgeBaseRepository;
+  public void sendVectorizeTask(Long kbId, String content) {
+    if (content == null || content.isBlank()) {
+      throw new BusinessException(ErrorCode.KNOWLEDGE_BASE_VECTORIZATION_FAILED, "向量内容不能为空");
     }
+    VectorTaskInput input = taskService.prepareInput(content);
+    String generation = taskService.begin(kbId, input);
+    sendAccepted(kbId, input, generation);
+  }
 
-    /**
-     * 发送向量化任务到 Redis Stream
-     *
-     * @param kbId    知识库ID
-     * @param content 文档内容
-     */
-    public void sendVectorizeTask(Long kbId, String content) {
-        sendTask(new VectorizeTaskPayload(kbId, content));
-    }
+  public void sendAccepted(Long kbId, VectorTaskInput input, String generation) {
+    String messageId = sendTask(new VectorizeTaskPayload(kbId, input.content(), generation));
+    if (messageId != null) { taskService.initialDelivery(generation, messageId, null); }
+  }
 
-    @Override
-    protected String taskDisplayName() {
-        return "向量化";
-    }
+  /** 重发固定快照，不能分配新请求版本。 */
+  public String sendRecovered(VectorTaskDeliveryDTO delivery) {
+    return sendTask(new VectorizeTaskPayload(delivery.kbId(), delivery.input().content(), delivery.generation()));
+  }
 
-    @Override
-    protected String streamKey() {
-        return AsyncTaskStreamConstants.KB_VECTORIZE_STREAM_KEY;
-    }
+  @Override protected String taskDisplayName() { return "向量化"; }
+  @Override protected String streamKey() { return AsyncTaskStreamConstants.KB_VECTORIZE_STREAM_KEY; }
+  @Override protected String payloadIdentifier(VectorizeTaskPayload payload) { return "kbId=" + payload.kbId(); }
 
-    @Override
-    protected Map<String, String> buildMessage(VectorizeTaskPayload payload) {
-        return Map.of(
-            AsyncTaskStreamConstants.FIELD_KB_ID, payload.kbId().toString(),
-            AsyncTaskStreamConstants.FIELD_CONTENT, payload.content(),
-            AsyncTaskStreamConstants.FIELD_RETRY_COUNT, "0"
-        );
-    }
+  @Override
+  protected Map<String, String> buildMessage(VectorizeTaskPayload payload) {
+    return Map.of(AsyncTaskStreamConstants.FIELD_KB_ID, payload.kbId().toString(),
+        AsyncTaskStreamConstants.FIELD_CONTENT, payload.content(),
+        AsyncTaskStreamConstants.FIELD_GENERATION, payload.generation(),
+        AsyncTaskStreamConstants.FIELD_RETRY_COUNT, "0");
+  }
 
-    @Override
-    protected String payloadIdentifier(VectorizeTaskPayload payload) {
-        return "kbId=" + payload.kbId();
+  @Override
+  protected void onSendFailed(VectorizeTaskPayload payload, String error) {
+    if (taskService.durableEnabled()) {
+      taskService.initialDelivery(payload.generation(), null, truncateError(error));
+    } else {
+      taskService.markFailed(payload.kbId(), payload.generation(), truncateError(error));
     }
-
-    @Override
-    protected void onSendFailed(VectorizeTaskPayload payload, String error) {
-        updateVectorStatus(payload.kbId(), VectorStatus.FAILED, truncateError(error));
-    }
-
-    /**
-     * 更新向量化状态
-     */
-    private void updateVectorStatus(Long kbId, VectorStatus status, String error) {
-        knowledgeBaseRepository.findById(kbId).ifPresent(kb -> {
-            kb.setVectorStatus(status);
-            if (error != null) {
-                kb.setVectorError(error.length() > 500 ? error.substring(0, 500) : error);
-            }
-            knowledgeBaseRepository.save(kb);
-        });
-    }
+  }
 }

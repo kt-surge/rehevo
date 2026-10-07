@@ -1,0 +1,29 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def projectRoot = gradle.rootProject.projectDir
+    def outputClasses = appProject.layout.buildDirectory.dir('voice-role-study/classes')
+    appProject.tasks.register('compileVoiceRoleStudy', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/voice-frame-pipeline/VoiceRoleHistoryStudyMain.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = outputClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('voiceRoleStudy', JavaExec) {
+        dependsOn 'compileVoiceRoleStudy'
+        classpath = appProject.files(outputClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.experiments.VoiceRoleHistoryStudyMain'
+        workingDir projectRoot
+        systemProperty 'rehevo.role.inputs', appProject.findProperty('voiceRoleInputs')
+        systemProperty 'rehevo.role.output', appProject.findProperty('voiceRoleOutput')
+        systemProperty 'rehevo.role.offset', appProject.findProperty('voiceRoleOffset') ?: '0'
+        systemProperty 'rehevo.role.limit', appProject.findProperty('voiceRoleLimit') ?: '2'
+        systemProperty 'rehevo.role.kind', appProject.findProperty('voiceRoleKind') ?: 'roles'
+        systemProperty 'rehevo.role.approvedPlan', appProject.findProperty('voiceRoleApprovedPlan') ?: ''
+        args '--server.address=127.0.0.1', '--server.port=0',
+            '--app.voice-interview.opening.warmup-enabled=false',
+            '--app.voice-interview.skill-preload-enabled=true',
+            '--app.ai.rag.chunking.mode=TOKEN', '--app.ai.rag.chunking.max-tokens=800',
+            '--app.ai.rag.vector-task.durable-enabled=false'
+    }
+}

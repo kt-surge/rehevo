@@ -125,6 +125,15 @@ public class LlmProviderRegistry {
         return getDefaultChatClient();
     }
 
+    /** 上下文问答可显式禁止默认工具：不发送无关 Skill 定义，也不加入全局对话记忆。 */
+    public ChatClient getChatClientOrDefault(String providerId, ToolAccess toolAccess) {
+        return toolAccess == ToolAccess.NONE ? getPlainChatClient(providerId) : getChatClientOrDefault(providerId);
+    }
+
+    public enum ToolAccess {
+        DEFAULT, NONE
+    }
+
     /**
      * 获取不带 SkillsTool 的 ChatClient，用于结构化输出场景（出题、简历评分等）。
      * 这些场景要求模型一次性返回可解析 JSON，不应混入工具调用消息。
@@ -220,11 +229,14 @@ public class LlmProviderRegistry {
         log.info("[LlmProviderRegistry] Building ChatModel - Provider: {}, BaseUrl: {}, Model: {}",
                  providerId, config.baseUrl(), config.model());
 
-        OpenAIClient openAiClient = ApiPathResolver.buildOpenAiClient(config.baseUrl(), config.apiKey());
+        OpenAIClient openAiClient = ApiPathResolver.buildOpenAiClient(
+            config.baseUrl(), config.apiKey(),
+            properties.getConnectTimeoutMs(), properties.getReadTimeoutMs());
 
         OpenAiChatOptions options = OpenAiChatOptions.builder()
                 .model(config.model())
                 .temperature(config.temperature() != null ? config.temperature() : 0.2)
+                .extraBody(properties.chatExtraBodyForModel(config.model()))
                 .build();
 
         return OpenAiChatModel.builder()
@@ -253,7 +265,9 @@ public class LlmProviderRegistry {
         log.info("[LlmProviderRegistry] Building EmbeddingModel - Provider: {}, BaseUrl: {}, Model: {}",
             providerId, config.baseUrl(), config.embeddingModel());
 
-        OpenAIClient openAiClient = ApiPathResolver.buildOpenAiClient(config.baseUrl(), config.apiKey());
+        OpenAIClient openAiClient = ApiPathResolver.buildOpenAiClient(
+            config.baseUrl(), config.apiKey(),
+            properties.getConnectTimeoutMs(), properties.getReadTimeoutMs());
         OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
             .model(config.embeddingModel())
             .dimensions(resolveEmbeddingDimensions(config.embeddingDimensions()))

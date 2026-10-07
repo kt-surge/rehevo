@@ -3,6 +3,8 @@ package interview.guide.modules.voiceinterview.service;
 import com.alibaba.dashscope.audio.ttsv2.SpeechSynthesisAudioFormat;
 import com.alibaba.dashscope.audio.ttsv2.SpeechSynthesisParam;
 import com.alibaba.dashscope.audio.ttsv2.SpeechSynthesizer;
+import interview.guide.common.exception.BusinessException;
+import interview.guide.common.exception.ErrorCode;
 import interview.guide.modules.voiceinterview.config.VoiceInterviewProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -10,13 +12,15 @@ import org.springframework.stereotype.Service;
 import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * Qwen Audio streaming TTS service.
  *
  * Provides real-time text-to-speech synthesis using Alibaba Cloud DashScope's
- * qwen-audio-3.0-tts-flash model via DashScope's streaming TTS protocol.
+ * configured Qwen-Audio model via DashScope's streaming TTS protocol.
  *
  * Key Features:
  * - WebSocket-based real-time TTS synthesis
@@ -24,15 +28,15 @@ import java.util.List;
  * - Support for Chinese language with configurable voice, speech rate, and volume
  *
  * Configuration:
- * - Model: qwen-audio-3.0-tts-flash
- * - Voice: longanhuan_v3.6
+ * - Default model: qwen-audio-3.1-tts-flash
+ * - Default voice: longanhuan_v3.1
  * - Audio format: PCM, 24kHz sample rate
  *
  * @see SpeechSynthesizer
  */
 @Slf4j
 @Service
-public class QwenTtsService {
+public class QwenTtsService implements VoiceFrameTtsClient {
 
     // Runtime configuration values (loaded from VoiceInterviewProperties; setters kept for tests)
     private String model;
@@ -62,7 +66,7 @@ public class QwenTtsService {
         log.info("QwenTtsService reloaded: model={}, voice={}", model, voice);
     }
 
-    private void applyTtsConfig(VoiceInterviewProperties.QwenTtsConfig tts) {
+    private synchronized void applyTtsConfig(VoiceInterviewProperties.QwenTtsConfig tts) {
         this.model = tts.getModel();
         this.apiKey = tts.getApiKey();
         this.voice = tts.getVoice();
@@ -112,27 +116,73 @@ public class QwenTtsService {
 
         log.debug("Starting TTS synthesis for text: {} characters", text.length());
 
+        SpeechSynthesizer synthesizer = null;
         try {
-            SpeechSynthesisParam param = SpeechSynthesisParam.builder()
-                    .model(model)
-                    .apiKey(apiKey)
-                    .voice(voice)
-                    .format(getAudioFormat())
-                    .speechRate(speechRate)
-                    .volume(volume)
-                    .languageHints(List.of(toLanguageHint(languageType)))
-                    .build();
-            SpeechSynthesizer synthesizer = new SpeechSynthesizer(param, null);
+            synthesizer = createSynthesizer(buildParameters());
             ByteBuffer audioBuffer = synthesizer.call(text, 30_000L);
-            byte[] audioData = new byte[audioBuffer.remaining()];
-            audioBuffer.get(audioData);
+            byte[] audioData = copyAudio(audioBuffer);
+            if (audioData.length == 0) {
+                log.warn("[TTS] Synthesis returned no audio - model={}, voice={}, chars={}",
+                    model, voice, text.length());
+                return audioData;
+            }
             log.info("[TTS] Synthesis completed - model={}, voice={}, chars={}, bytes={}, firstPackageMs={}",
                     model, voice, text.length(), audioData.length, synthesizer.getFirstPackageDelay());
             return audioData;
         } catch (Exception e) {
             log.error("Failed to synthesize text", e);
             return new byte[0];
+        } finally {
+            if (synthesizer != null) {
+                closeConnection(synthesizer);
+            }
         }
+    }
+
+  @Override
+  public synchronized VoiceTtsTask prepareFrames(String text, Duration timeout, Consumer<byte[]> onFrame) {
+    if (text == null || text.isBlank()) {
+      throw new BusinessException(ErrorCode.BAD_REQUEST, "TTS 帧流文本不能为空");
+    }
+    if (!"pcm".equalsIgnoreCase(format) || !Integer.valueOf(24000).equals(sampleRate)) {
+      throw new BusinessException(ErrorCode.BAD_REQUEST, "TTS 帧流要求 PCM 24000 单声道 16 位格式");
+    }
+    if (timeout == null || timeout.isNegative() || timeout.isZero() || timeout.toMillis() == 0
+        || onFrame == null) {
+      throw new BusinessException(ErrorCode.BAD_REQUEST, "TTS 帧回调和有效截止时间不能为空");
+    }
+    SpeechSynthesizer synthesizer = createSynthesizer(buildParameters());
+    return new PcmTtsStreamTask(() -> synthesizer.callAsFlowable(text),
+        () -> closeConnection(synthesizer), timeout, onFrame);
+  }
+
+  private synchronized SpeechSynthesisParam buildParameters() {
+    return SpeechSynthesisParam.builder()
+        .model(model).apiKey(apiKey).voice(voice).format(getAudioFormat())
+        .speechRate(speechRate).volume(volume)
+        .languageHints(List.of(toLanguageHint(languageType))).build();
+  }
+
+  SpeechSynthesizer createSynthesizer(SpeechSynthesisParam parameters) {
+    return new SpeechSynthesizer(parameters, null);
+  }
+
+  private void closeConnection(SpeechSynthesizer synthesizer) {
+    try {
+      synthesizer.getDuplexApi().close(1000, "synthesis-complete-or-cancelled");
+    } catch (Exception error) {
+      log.warn("TTS connection close failed", error);
+    }
+  }
+
+    static byte[] copyAudio(ByteBuffer audioBuffer) {
+        if (audioBuffer == null || !audioBuffer.hasRemaining()) {
+            return new byte[0];
+        }
+        ByteBuffer readable = audioBuffer.slice();
+        byte[] audioData = new byte[readable.remaining()];
+        readable.get(audioData);
+        return audioData;
     }
 
     /**

@@ -1,0 +1,87 @@
+{
+  "reports": {
+    "baseline": {
+      "usage": {
+        "input": 2634.0,
+        "output": 644.0,
+        "total": 3278.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operation counts are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 1,
+        "followUps": 0,
+        "requestedCategory": "SPRING",
+        "actualType": "SPRING",
+        "typeMatches": true,
+        "trainingTargetIds": [
+          "training:042862f3-0511-305f-9f51-8234b8faa1a2"
+        ],
+        "targetIdsValid": true,
+        "rawRubricLevels": 5,
+        "actualReferenceChars": 1269,
+        "actualProductSessionWrites": 0,
+        "semanticQualityGate": "HOLD pending separate semantic and fixed-answer scoring review",
+        "scopeUnchanged": true,
+        "formalEffectOrLatency": false
+      },
+      "result": {
+        "status": "finished",
+        "invokerOperations": 1,
+        "formalEffectOrLatency": false,
+        "elapsedMs": 12954.2727
+      }
+    },
+    "candidate": {
+      "usage": {
+        "input": 2876.0,
+        "output": 630.0,
+        "total": 3506.0,
+        "observedChatOperations": 1.0,
+        "crossModelComparisons": 0,
+        "embedding": 0,
+        "asr": 0,
+        "tts": 0,
+        "supplierWireRequests": "not captured; SDK operation counts are not wire request counts"
+      },
+      "mechanical": {
+        "mainQuestions": 1,
+        "followUps": 0,
+        "requestedCategory": "SPRING",
+        "actualType": "SPRING",
+        "typeMatches": true,
+        "trainingTargetIds": [
+          "training:042862f3-0511-305f-9f51-8234b8faa1a2"
+        ],
+        "targetIdsValid": true,
+        "rawRubricLevels": 5,
+        "actualReferenceChars": 1881,
+        "actualProductSessionWrites": 0,
+        "semanticQualityGate": "HOLD pending separate semantic and fixed-answer scoring review",
+        "scopeUnchanged": true,
+        "formalEffectOrLatency": false
+      },
+      "result": {
+        "invokerOperations": 1,
+        "status": "finished",
+        "elapsedMs": 11712.888,
+        "formalEffectOrLatency": false
+      }
+    }
+  },
+  "integrity": {
+    "inputByteIdentical": true,
+    "promptOutsideReferenceEqual": true,
+    "systemAndSecuritySuffixEqual": true,
+    "onlyActualReferenceSectionDiffers": true,
+    "randomBoundaryAndCrlfOnlyNormalization": true,
+    "case": "boot-config",
+    "order": "AB",
+    "exposedDevelopmentDiagnostic": true,
+    "noFormalQualityOrLatencyClaim": true
+  }
+}

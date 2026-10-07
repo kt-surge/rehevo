@@ -3,12 +3,16 @@ package interview.guide.modules.knowledgebase.service;
 import interview.guide.common.exception.BusinessException;
 import interview.guide.common.exception.ErrorCode;
 import interview.guide.common.metrics.ApplicationMetrics;
+import interview.guide.common.config.DocumentChunkingProperties;
 import interview.guide.common.transaction.TransactionalExecutor;
+import interview.guide.infrastructure.file.DocumentChunkingService;
 import interview.guide.modules.knowledgebase.repository.VectorRepository;
+import interview.guide.modules.knowledgebase.model.VectorStatus;
+import interview.guide.modules.knowledgebase.model.VectorTaskEntity;
+import interview.guide.modules.knowledgebase.model.VectorTaskExecutionDTO;
+import interview.guide.modules.knowledgebase.repository.VectorTaskRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
-import org.springframework.ai.transformer.splitter.TextSplitter;
-import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +20,11 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
 
 /**
  * 知识库向量存储服务
@@ -35,29 +42,39 @@ public class KnowledgeBaseVectorService {
     private static final String METADATA_KB_ID = "kb_id";
     private static final String METADATA_TARGET_KB_ID = "kb_target_id";
     private static final String METADATA_VECTOR_JOB_ID = "kb_vector_job_id";
+    private static final String METADATA_CHUNK_INDEX = "chunk_index";
     private final VectorStore vectorStore;
-    private final TextSplitter textSplitter;
+    private final DocumentChunkingService chunkingService;
     private final VectorRepository vectorRepository;
     private final TransactionalExecutor transactionalExecutor;
     private final ApplicationMetrics applicationMetrics;
+    private final VectorTaskRepository durableTasks;
 
     @Autowired
     public KnowledgeBaseVectorService(
         VectorStore vectorStore,
         VectorRepository vectorRepository,
         TransactionalExecutor transactionalExecutor,
-        ApplicationMetrics applicationMetrics
+        ApplicationMetrics applicationMetrics,
+        DocumentChunkingService chunkingService,
+        VectorTaskRepository durableTasks
     ) {
         this.vectorStore = vectorStore;
         this.vectorRepository = vectorRepository;
         this.transactionalExecutor = transactionalExecutor;
         this.applicationMetrics = applicationMetrics;
-        // 使用 TokenTextSplitter 默认配置，每个 chunk 约 800 tokens，基于标点边界切分（无重叠）
-        this.textSplitter = TokenTextSplitter.builder().build();
+        this.chunkingService = chunkingService;
+        this.durableTasks = durableTasks;
+    }
+
+    public KnowledgeBaseVectorService(VectorStore store, VectorRepository vectors,
+        TransactionalExecutor transactions, ApplicationMetrics metrics, DocumentChunkingService chunking) {
+        this(store, vectors, transactions, metrics, chunking, null);
     }
 
     KnowledgeBaseVectorService(VectorStore vectorStore, VectorRepository vectorRepository) {
-        this(vectorStore, vectorRepository, null, new ApplicationMetrics(null));
+        this(vectorStore, vectorRepository, null, new ApplicationMetrics(null),
+            new DocumentChunkingService(new DocumentChunkingProperties()));
     }
 
     /**
@@ -65,7 +82,17 @@ public class KnowledgeBaseVectorService {
      * @param knowledgeBaseId 知识库ID
      * @param content 知识库文本内容
      */
-    public void vectorizeAndStore(Long knowledgeBaseId, String content) {
+    public boolean vectorizeAndStore(Long knowledgeBaseId, String content, String generation) {
+        return vectorizeAndStore(knowledgeBaseId, content, generation, null);
+    }
+
+    public boolean vectorizeAndStore(Long knowledgeBaseId, String content, String generation,
+        DocumentChunkingProperties snapshot) {
+        return vectorizeAndStore(knowledgeBaseId, content, generation, snapshot, null, () -> true);
+    }
+
+    public boolean vectorizeAndStore(Long knowledgeBaseId, String content, String generation,
+        DocumentChunkingProperties snapshot, VectorTaskExecutionDTO execution, BooleanSupplier permit) {
         long startNanos = System.nanoTime();
         String jobId = null;
         int totalChunks = 0;
@@ -73,19 +100,27 @@ public class KnowledgeBaseVectorService {
             if (knowledgeBaseId == null) {
                 throw new IllegalArgumentException("knowledgeBaseId不能为空");
             }
+            if (generation == null || generation.isBlank()) {
+              throw new BusinessException(ErrorCode.KNOWLEDGE_BASE_VECTORIZATION_FAILED, "向量任务缺少请求版本");
+            }
+            if (content == null || content.isBlank()) {
+              throw new BusinessException(ErrorCode.KNOWLEDGE_BASE_VECTORIZATION_FAILED, "向量内容不能为空");
+            }
             jobId = UUID.randomUUID().toString();
             log.info("开始向量化知识库: kbId={}, jobId={}, contentLength={}",
                 knowledgeBaseId, jobId, content.length());
 
             // 1. 将文本分块
-            List<Document> chunks = textSplitter.apply(
-                List.of(new Document(content))
-            );
+            List<Document> chunks = (snapshot == null ? chunkingService : new DocumentChunkingService(snapshot)).split(content);
+            // TokenTextSplitter 的输出元数据不承诺包含稳定的分块序号。
+            // 显式持久化它，才能把一次检索结果与 Gold 的文档/Chunk 证据主键一一对应。
+            applyChunkIndexes(chunks);
             
             log.info("文本分块完成: {} 个chunks", chunks.size());
             
             // 2. 为每个 chunk 添加临时 metadata，成功后再提升为正式 kb_id。
             applyPendingMetadata(chunks, knowledgeBaseId, jobId);
+            chunks.forEach(chunk -> chunk.getMetadata().put("kb_generation", generation));
 
             // 3. 分批向量化并存储（阿里云 DashScope API 限制 batch size <= 10）
             totalChunks = chunks.size();
@@ -97,14 +132,26 @@ public class KnowledgeBaseVectorService {
                 int end = Math.min(start + MAX_BATCH_SIZE, totalChunks);
                 List<Document> batch = chunks.subList(start, end);
                 log.debug("处理第 {}/{} 批: chunks {}-{}", i + 1, batchCount, start + 1, end);
+                if (!permit.getAsBoolean()) {
+                  cleanupPendingVectorJob(knowledgeBaseId, jobId);
+                  applicationMetrics.recordRagVectorization(System.nanoTime() - startNanos,
+                      totalChunks, ApplicationMetrics.Outcome.SKIPPED);
+                  return false;
+                }
                 vectorStore.add(batch);
             }
-            activateVectorJob(knowledgeBaseId, jobId);
+            if (!activateVectorJob(knowledgeBaseId, jobId, generation, totalChunks, execution, permit)) {
+              log.info("请求已过期、已完成或父文档已删除，放弃提升: kbId={}, jobId={}", knowledgeBaseId, jobId);
+              applicationMetrics.recordRagVectorization(
+                  System.nanoTime() - startNanos, totalChunks, ApplicationMetrics.Outcome.SKIPPED);
+              return false;
+            }
             log.info("知识库向量化完成: kbId={}, jobId={}, chunks={}, batches={}",
                     knowledgeBaseId, jobId, totalChunks, batchCount);
             applicationMetrics.recordRagVectorization(
                 System.nanoTime() - startNanos, totalChunks, ApplicationMetrics.Outcome.SUCCESS
             );
+            return true;
         } catch (Exception e) {
             cleanupPendingVectorJob(knowledgeBaseId, jobId);
             log.error("向量化知识库失败: kbId={}, jobId={}, error={}",
@@ -112,8 +159,11 @@ public class KnowledgeBaseVectorService {
             applicationMetrics.recordRagVectorization(
                 System.nanoTime() - startNanos, totalChunks, ApplicationMetrics.Outcome.FAILURE
             );
+            if (e instanceof BusinessException businessException) {
+              throw businessException;
+            }
             throw new BusinessException(ErrorCode.KNOWLEDGE_BASE_VECTORIZATION_FAILED,
-                "向量化知识库失败: " + e.getMessage());
+                "向量化知识库失败: " + e.getMessage(), e);
         }
     }
 
@@ -124,6 +174,12 @@ public class KnowledgeBaseVectorService {
             chunk.getMetadata().put(METADATA_TARGET_KB_ID, knowledgeBaseId.toString());
             chunk.getMetadata().put(METADATA_VECTOR_JOB_ID, jobId);
         });
+    }
+
+    private void applyChunkIndexes(List<Document> chunks) {
+        for (int index = 0; index < chunks.size(); index++) {
+            chunks.get(index).getMetadata().put(METADATA_CHUNK_INDEX, index);
+        }
     }
     
     /**
@@ -286,12 +342,50 @@ public class KnowledgeBaseVectorService {
         runVectorRepositoryMutation(() -> vectorRepository.deleteByKnowledgeBaseId(knowledgeBaseId));
     }
 
-    private void activateVectorJob(Long knowledgeBaseId, String jobId) {
-        runVectorRepositoryMutation(() -> {
-            vectorRepository.deleteByKnowledgeBaseId(knowledgeBaseId);
-            vectorRepository.promoteVectorJob(knowledgeBaseId, jobId);
-        });
-    }
+  private boolean activateVectorJob(Long knowledgeBaseId, String jobId, String generation, int chunkCount,
+      VectorTaskExecutionDTO execution, BooleanSupplier permit) {
+    Supplier<Boolean> action = () -> {
+      if (!vectorRepository.lockExistingKnowledgeBase(knowledgeBaseId)) {
+        vectorRepository.deleteByVectorJobId(jobId);
+        return false;
+      }
+      var current = vectorRepository.findVectorTaskState(knowledgeBaseId);
+      if (current.isEmpty() || !generation.equals(current.get().generation())
+          || current.get().status() == VectorStatus.COMPLETED) {
+        vectorRepository.deleteByVectorJobId(jobId);
+        return false;
+      }
+      var task = durableTasks == null ? Optional.<VectorTaskEntity>empty()
+          : durableTasks.lockExecution(generation);
+      if (task.isPresent() && (execution == null
+          || !KnowledgeBaseVectorTaskService.owns(task.get(), execution, durableTasks.databaseNow()))) {
+        vectorRepository.deleteByVectorJobId(jobId);
+        return false;
+      }
+      if (execution != null && task.isEmpty()) {
+        vectorRepository.deleteByVectorJobId(jobId);
+        return false;
+      }
+      if (!permit.getAsBoolean()) {
+        vectorRepository.deleteByVectorJobId(jobId);
+        return false;
+      }
+      vectorRepository.deleteByKnowledgeBaseId(knowledgeBaseId);
+      int promoted = vectorRepository.promoteVectorJob(knowledgeBaseId, jobId);
+      if (promoted != chunkCount || vectorRepository.completeVectorTask(knowledgeBaseId, generation, promoted) != 1) {
+        throw new BusinessException(ErrorCode.KNOWLEDGE_BASE_VECTORIZATION_FAILED, "向量提升与完成状态未完整写入");
+      }
+      if (execution != null && durableTasks.completeExecution(knowledgeBaseId, generation,
+          execution.owner(), execution.fence(), durableTasks.databaseNow()) != 1) {
+        throw new BusinessException(ErrorCode.KNOWLEDGE_BASE_VECTORIZATION_FAILED, "持久化任务完成状态未提交");
+      }
+      if (execution != null) {
+        vectorRepository.deleteSupersededPendingVectors(knowledgeBaseId, jobId);
+      }
+      return true;
+    };
+    return transactionalExecutor == null ? action.get() : transactionalExecutor.call(action);
+  }
 
     private void cleanupPendingVectorJob(Long knowledgeBaseId, String jobId) {
         if (jobId == null) {

@@ -10,6 +10,7 @@ import interview.guide.modules.interview.model.InterviewReportDTO;
 import interview.guide.modules.interview.model.InterviewReportDTO.CategoryScore;
 import interview.guide.modules.interview.model.InterviewReportDTO.QuestionEvaluation;
 import interview.guide.modules.interview.model.InterviewReportDTO.ReferenceAnswer;
+import interview.guide.modules.interview.model.InterviewReportDTO.TrainingTask;
 import interview.guide.modules.interview.skill.InterviewSkillService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +50,9 @@ public class AnswerEvaluationService {
         try {
             // 转为通用问答记录
             List<QaRecord> qaRecords = questions.stream()
-                .map(q -> new QaRecord(q.questionIndex(), q.question(), q.category(), q.userAnswer()))
+                .map(q -> new QaRecord(
+                    q.questionIndex(), q.question(), q.category(), q.userAnswer(),
+                    q.evaluationGuide()))
                 .toList();
 
             String referenceContext = skillService.buildEvaluationReferenceSectionSafe(
@@ -78,17 +81,31 @@ public class AnswerEvaluationService {
         return new InterviewReportDTO(
             report.sessionId(),
             report.totalQuestions(),
+            report.answeredQuestions(),
+            report.scoredQuestions(),
+            report.failedQuestions(),
+            report.evidenceSupportedQuestions(),
+            report.evaluationCoverage(),
+            report.evidenceCoverage(),
             report.overallScore(),
             report.categoryScores().stream()
-                .map(cs -> new CategoryScore(cs.category(), cs.score(), cs.questionCount()))
+                .map(cs -> new CategoryScore(cs.category(), cs.score(), cs.questionCount(),
+                    cs.answeredQuestionCount(), cs.scoredQuestionCount(), cs.evaluationCoverage()))
                 .toList(),
             report.questionDetails().stream()
                 .map(qe -> new QuestionEvaluation(qe.questionIndex(), qe.question(), qe.category(),
-                    qe.userAnswer(), qe.score(), qe.feedback()))
+                    qe.userAnswer(), qe.score(), qe.feedback(), qe.rubricLevel(),
+                    qe.answerEvidence(), qe.missingPoints(), qe.factualRisks(), qe.nextAction(),
+                    qe.evaluationStatus().name()))
                 .toList(),
             report.overallFeedback(),
             report.strengths(),
             report.improvements(),
+            report.trainingTasks().stream()
+                .map(task -> new TrainingTask(
+                    task.competency(), task.questionIndexes(), task.reason(), task.action(),
+                    task.completionCriteria(), task.priority()))
+                .toList(),
             report.referenceAnswers().stream()
                 .map(ra -> new ReferenceAnswer(ra.questionIndex(), ra.question(),
                     ra.referenceAnswer(), ra.keyPoints()))

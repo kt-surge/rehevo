@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="评分口径" tests="3" skipped="0" failures="0" errors="0" timestamp="2026-10-01T08:50:17.132Z" hostname="LAPTOP-BT5MEUFJ" time="0.004">
+  <properties/>
+  <testcase name="评分与 Rubric 等级对齐并过滤回答中不存在的伪证据" classname="interview.guide.common.evaluation.UnifiedEvaluationServiceTest$ScoringRules" time="0.001"/>
+  <testcase name="总分只统计成功评分的已回答题并报告覆盖率" classname="interview.guide.common.evaluation.UnifiedEvaluationServiceTest$ScoringRules" time="0.001"/>
+  <testcase name="全部未回答时覆盖率与总分均为零且不产生失败题" classname="interview.guide.common.evaluation.UnifiedEvaluationServiceTest$ScoringRules" time="0.001"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

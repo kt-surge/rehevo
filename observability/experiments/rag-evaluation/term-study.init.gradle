@@ -1,0 +1,26 @@
+gradle.projectsEvaluated {
+    def appProject = gradle.rootProject.project(':app')
+    def projectRoot = gradle.rootProject.projectDir
+    def outputClasses = appProject.layout.buildDirectory.dir('term-study/classes')
+    appProject.tasks.register('compileTermStudy', JavaCompile) {
+        dependsOn appProject.tasks.named('classes')
+        source new File(projectRoot, 'observability/experiments/rag-evaluation/RagTermBoundaryStudyMain.java')
+        classpath = appProject.sourceSets.main.runtimeClasspath
+        destinationDirectory = outputClasses
+        options.encoding = 'UTF-8'
+    }
+    appProject.tasks.register('termStudy', JavaExec) {
+        dependsOn 'compileTermStudy'
+        classpath = appProject.files(outputClasses) + appProject.sourceSets.main.runtimeClasspath
+        mainClass = 'interview.guide.experiments.RagTermBoundaryStudyMain'
+        workingDir projectRoot
+        systemProperty 'term.inputs', appProject.findProperty('termInputs')
+        systemProperty 'term.output', appProject.findProperty('termOutput')
+        systemProperty 'term.offset', appProject.findProperty('termOffset') ?: '0'
+        systemProperty 'term.limit', appProject.findProperty('termLimit') ?: '4'
+        args '--server.address=127.0.0.1', '--server.port=0',
+            '--app.voice-interview.opening.warmup-enabled=false',
+            '--app.ai.rag.chunking.mode=TOKEN', '--app.ai.rag.chunking.max-tokens=800',
+            '--app.ai.rag.vector-task.durable-enabled=false'
+    }
+}

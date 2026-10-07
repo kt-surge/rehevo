@@ -1,51 +1,9 @@
 import { request } from './request';
 import { streamSse } from './stream';
-
-// ========== 类型定义 ==========
-
-export interface RagChatSession {
-  id: number;
-  title: string;
-  knowledgeBaseIds: number[];
-  createdAt: string;
-}
-
-export interface RagChatSessionListItem {
-  id: number;
-  title: string;
-  messageCount: number;
-  knowledgeBaseNames: string[];
-  updatedAt: string;
-  isPinned: boolean;
-}
-
-export interface RagChatMessage {
-  id: number;
-  type: 'user' | 'assistant';
-  content: string;
-  createdAt: string;
-}
-
-export interface KnowledgeBaseItem {
-  id: number;
-  name: string;
-  originalFilename: string;
-  fileSize: number;
-  contentType: string;
-  uploadedAt: string;
-  lastAccessedAt: string;
-  accessCount: number;
-  questionCount: number;
-}
-
-export interface RagChatSessionDetail {
-  id: number;
-  title: string;
-  knowledgeBases: KnowledgeBaseItem[];
-  messages: RagChatMessage[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { ragStreamProtocol } from '../utils/ragStreamProtocol';
+import type { RagChatSession, RagChatSessionListItem, RagChatSessionDetail,
+  RagStreamCallbacks, RagStreamEvent } from '../types/ragChat';
+export type { RagChatEvidence, RagChatSessionListItem } from '../types/ragChat';
 
 // ========== API 函数 ==========
 
@@ -110,24 +68,27 @@ export const ragChatApi = {
   async sendMessageStream(
     sessionId: number,
     question: string,
-    onMessage: (chunk: string) => void,
-    onComplete: () => void,
-    onError: (error: Error) => void
+    callbacks: RagStreamCallbacks
   ): Promise<void> {
+    const protocol = ragStreamProtocol(callbacks);
     return streamSse({
       url: `/api/rag-chat/sessions/${sessionId}/messages/stream`,
       init: {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question }),
+        signal: callbacks.signal,
       },
-      onMessage,
-      onComplete,
-      onError,
+      onMessage: () => {},
+      onEvent: protocol.onEvent,
+      onComplete: protocol.onComplete,
+      onError: callbacks.onError,
       parseMode: 'event',
-      trimDataPrefixSpace: false,
-      unescapeEscapedNewlines: true,
-      dataJoiner: '',
+      trimDataPrefixSpace: true,
     });
+  },
+
+  async cancelMessage(sessionId: number, messageId: number): Promise<RagStreamEvent> {
+    return request.post(`/api/rag-chat/sessions/${sessionId}/messages/${messageId}/cancel`);
   },
 };

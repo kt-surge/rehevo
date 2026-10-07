@@ -1,0 +1,18 @@
+// Full test classpath for a separately launched, controlled child JVM.
+gradle.projectsEvaluated {
+  def appProject = gradle.rootProject.project(':app')
+  appProject.tasks.named('integrationTest').configure { task ->
+    doFirst {
+      def classpathLocation = System.getenv('REHEVO_FAULT_CLASSPATH_FILE')
+      if (classpathLocation != null) {
+        // Windows command line length: pass a short path, never the full classpath as -D.
+        new File(classpathLocation).text = task.classpath.asPath
+        task.systemProperty 'rehevo.fault.classpath-file', classpathLocation
+      }
+      def artifacts = System.getenv('REHEVO_FAULT_ARTIFACTS')
+      if (artifacts != null) {
+        task.systemProperty 'rehevo.fault.artifacts', artifacts
+      }
+    }
+  }
+}

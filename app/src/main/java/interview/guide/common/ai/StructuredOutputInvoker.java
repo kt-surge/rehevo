@@ -1,5 +1,7 @@
 package interview.guide.common.ai;
 
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tags;
 import interview.guide.common.exception.BusinessException;
@@ -9,8 +11,12 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
+import java.util.function.BooleanSupplier;
 import java.util.regex.Pattern;
 
 /**
@@ -19,11 +25,16 @@ import java.util.regex.Pattern;
 @Component
 public class StructuredOutputInvoker {
 
+    private static final JsonMapper SCHEMA_JSON_MAPPER = JsonMapper.builder()
+        .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS).build();
+
     private static final String STRICT_JSON_INSTRUCTION = """
 请仅返回可被 JSON 解析器直接解析的 JSON 对象，并严格满足字段结构要求：
 1) 不要输出 Markdown 代码块（如 ```json）。
 2) 不要输出任何解释文字、前后缀、注释。
 3) 所有字符串内引号必须正确转义。
+4) Schema 中出现的每个字段都必须返回；没有内容的字符串返回 ""，没有条目的数组返回 []，不得省略字段或返回 null。
+5) 数组中的每个对象也必须返回其 Schema 中的全部字段。
     """;
 
     private static final String METRIC_INVOCATIONS = "app.ai.structured_output.invocations";
@@ -68,24 +79,50 @@ public class StructuredOutputInvoker {
         String logContext,
         Logger log
     ) {
+        return invoke(chatClient, systemPromptWithFormat, userPrompt, outputConverter,
+            errorCode, errorPrefix, logContext, log, () -> true);
+    }
+
+  /** 预算条件由调用方提供，避免底层清除中断后又发起一次结构重试。 */
+  public <T> T invoke(
+      ChatClient chatClient,
+      String systemPromptWithFormat,
+      String userPrompt,
+      BeanOutputConverter<T> outputConverter,
+      ErrorCode errorCode,
+      String errorPrefix,
+      String logContext,
+      Logger log,
+      BooleanSupplier withinBudget
+  ) {
         long startNanos = System.nanoTime();
         String contextTag = normalizeContextTag(logContext);
         String securedSystemPrompt = systemPromptWithFormat
             + PromptSecurityConstants.ANTI_INJECTION_INSTRUCTION;
         Exception lastError = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+            if (Thread.currentThread().isInterrupted() || !withinBudget.getAsBoolean()) {
+                lastError = new BusinessException(errorCode, "调用已取消或预算已耗尽");
+                break;
+            }
             String attemptSystemPrompt = attempt == 1
                 ? securedSystemPrompt
                 : buildRetrySystemPrompt(securedSystemPrompt, lastError);
             try {
                 T result = callStructuredOutput(
                     chatClient, attemptSystemPrompt, userPrompt, outputConverter, logContext, log);
+                if (Thread.currentThread().isInterrupted() || !withinBudget.getAsBoolean()) {
+                    throw new BusinessException(errorCode, "调用已取消或预算已耗尽，丢弃迟到结果");
+                }
                 recordAttempt(contextTag, STATUS_SUCCESS);
                 recordInvocation(contextTag, STATUS_SUCCESS, startNanos);
                 return result;
             } catch (Exception e) {
                 lastError = e;
                 recordAttempt(contextTag, STATUS_FAILURE);
+                if (Thread.currentThread().isInterrupted() || !withinBudget.getAsBoolean()) {
+                    break;
+                }
                 if (attempt < maxAttempts) {
                     log.warn("{}结构化解析失败，准备重试: attempt={}/{}, error={}",
                         logContext, attempt, maxAttempts, e.getMessage());
@@ -111,15 +148,26 @@ public class StructuredOutputInvoker {
         String logContext,
         Logger log
     ) {
-        var call = chatClient.prompt()
+        String content = chatClient.prompt()
             .system(systemPrompt)
             .user(userPrompt)
-            .call();
+            .call().content();
         if (schemaValidationEnabled) {
-            return call.entity(outputConverter, spec -> spec.validateSchema());
+            // SDK validateSchema() 自带递归重试，会与本类预算叠加且耗尽后仍返回最后结果。
+            // 本地执行同一 DRAFT_2020_12 校验，解析与 Schema 失败统一交给中央重试。
+            validateOutputSchema(content, outputConverter);
         }
-        String content = call.content();
         return convertWithRepair(content, outputConverter, logContext, log);
+    }
+
+    private <T> void validateOutputSchema(String content, BeanOutputConverter<T> converter) {
+        var schema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12)
+            .getSchema(SCHEMA_JSON_MAPPER.readTree(converter.getJsonSchema()));
+        var errors = schema.validate(SCHEMA_JSON_MAPPER.readTree(content));
+        if (!errors.isEmpty()) {
+            throw new BusinessException(ErrorCode.AI_SERVICE_ERROR,
+                "结构化输出不满足 Schema，存在 " + errors.size() + " 处字段错误");
+        }
     }
 
     private <T> T convertWithRepair(
@@ -242,7 +290,7 @@ public class StructuredOutputInvoker {
         Tags tags = Tags.of("context", contextTag, "status", status);
         meterRegistry.counter(METRIC_INVOCATIONS, tags).increment();
         meterRegistry.timer(METRIC_LATENCY, tags)
-            .record(System.nanoTime() - startNanos, java.util.concurrent.TimeUnit.NANOSECONDS);
+            .record(System.nanoTime() - startNanos, TimeUnit.NANOSECONDS);
     }
 
     private boolean isMetricsAvailable() {

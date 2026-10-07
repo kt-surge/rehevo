@@ -1,0 +1,30 @@
+{
+  "runs": [
+    {
+      "run": "application-session-delete-20261005-r1",
+      "files": 16,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-session-delete-20261005-r2",
+      "files": 16,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    },
+    {
+      "run": "application-session-delete-regression-20261005-r1",
+      "files": 94,
+      "mismatches": [],
+      "exactSensitiveValuesFound": 0
+    }
+  ],
+  "totalFiles": 126,
+  "independentSha256Verification": true,
+  "priorAsr750FilesRecheckedUnchanged": true,
+  "modelsCalledThisCachePhase": 0,
+  "oldRuntimeAndTestsTerminal": true,
+  "liveRuntimeHandle": 61821,
+  "lastVerifiedPid": 63072,
+  "requiresLivePidRecheckBeforeStop": true
+}
